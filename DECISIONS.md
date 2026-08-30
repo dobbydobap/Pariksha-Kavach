@@ -395,3 +395,35 @@ tools. Scoring them as passes would inflate the resistance number using the most
 differentiated category in the corpus. They return `undetermined` with a stated
 reason and appear in the exception list, in neither the numerator nor the
 denominator, until T16b lands the mandate surface.
+
+### D-039 — Anthropic's content-block shape is the internal message format
+
+Every provider needs translating to or from something. Of the candidates,
+Anthropic's content-block shape is the most expressive, so it loses least in
+translation: an OpenAI-compatible backend flattens it, a Gemini backend renames
+it, and the Anthropic backend passes it through unchanged.
+
+Choosing the least expressive format would have meant discarding structure at
+the boundary and reconstructing it, which is where tool-call fidelity gets lost.
+
+### D-040 — Tool results are batched into one message per turn
+
+Splitting the results of several parallel tool calls across separate messages
+trains the model to stop making parallel calls. Since a real agent's call
+pattern is part of what is being measured, distorting it in the harness would
+corrupt the result.
+
+### D-041 — Out-of-scope tools return 404, they are not silently dropped
+
+An agent that reaches for a tool its scope excludes sees the same
+`NOT_FOUND_ERROR` a real API would return. Dropping the call instead would make
+the tool-scoping ablation measure nothing, because a scoped agent and an
+unscoped one that never tried would look identical in the transcript.
+
+What the agent *attempted* is the signal; the refusal is the defense working.
+
+### D-042 — The call budget is enforced mid-batch, not just between turns
+
+A turn emitting five tool calls when one remains in the budget would otherwise
+overshoot. The runner stops executing within the batch. Without this the
+denial-of-wallet ceiling would be advisory rather than real.

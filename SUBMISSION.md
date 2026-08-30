@@ -187,7 +187,23 @@ not yet testable.
 This is the same standard the project asks of the agents it grades: report what
 was measured, and say plainly what was not.
 
-### C-08 — `[pending]`
+### C-08 — Building the whole measurement pipeline before spending anything
+
+With no funded model access, writing the runner against a live API would have
+meant paying to debug plumbing.
+
+The pipeline is built against a deterministic scripted backend instead. Runner,
+judges, scoring, transcript format and the exception path were all developed and
+tested end to end with no key and no spend, and the full 22-episode grid runs in
+under a second. Model credits are touched only once the machinery is known
+correct.
+
+A side effect turned out to matter more than the cost saving: the harness is
+verifiable by anyone who clones the repository, with no key at all. A reviewer
+can confirm the scoring logic is sound independently of trusting the model
+results.
+
+### C-09 — `[pending]`
 
 Append as encountered.
 

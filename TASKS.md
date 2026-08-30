@@ -72,28 +72,28 @@ writing it from memory on the last night produces a generic answer.
   24-hour pre-debit notice and the opt-out flag. Without this the most
   differentiated attack category cannot score (D-019).
 
-- [ ] **T17** `gym/backends/base.py`
+- [x] **T17** `gym/backends/base.py`
   `Backend` protocol: `complete(messages, tools, system) -> Completion`, where
   `Completion` carries text, tool calls, usage and stop reason.
 
-- [ ] **T18** `gym/backends/mock.py`
+- [x] **T18** `gym/backends/mock.py`
   Deterministic scripted backend (D-023). Drives a scenario to a scripted
   outcome so the whole pipeline is testable with no key and no spend. Supports
   scripting a compliant run, an attacked run, and a malformed run.
 
-- [ ] **T19** `gym/runner.py`
+- [x] **T19** `gym/runner.py`
   Episode executor: builds the prompt, loops the backend against the tool
   surface, enforces the call budget, writes the transcript. Backend-agnostic.
 
-- [ ] **T20** Tests for runner against the mock backend, including budget
+- [x] **T20** Tests for runner against the mock backend, including budget
   exhaustion and tool-error recovery.
 
-- [ ] **T21** `gym/score.py`
+- [x] **T21** `gym/score.py`
   Aggregate transcripts and judgments into attack success rate by category and
   subtlety, benign utility, blast radius per 1,000 episodes, and the exception
   list. Wilson confidence intervals on every rate (n is small; D-004).
 
-- [ ] **T22** Tests for scoring, including the degenerate all-blocked case that
+- [x] **T22** Tests for scoring, including the degenerate all-blocked case that
   must show zero utility.
 
   ```
@@ -132,8 +132,8 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 3 — Agents and the first real numbers
 
-- [ ] **T36** `agents/base.py` — agent definition: system prompt, allowed tool
-  subset, call budget.
+- [x] **T36** `agents/base.py` — agent definition: system prompt, allowed tool
+  subset, call budget. Pulled forward; the runner depends on it.
 - [ ] **T37** `agents/refund_resolver.py` — deliberately naive v0.
 - [ ] **T38** `agents/dispute_responder.py` — deliberately naive v0.
 - [ ] **T39** `agents/payout_agent.py` — deliberately naive v0.
