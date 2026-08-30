@@ -1,0 +1,221 @@
+# Pariksha — task board
+
+53 tasks to submission. One task = one commit. Nothing bundled.
+
+Deadline **5 September 2026**. Feature freeze **3 September**. Submit the morning
+of the 5th, never at the deadline.
+
+Rules for every task:
+- Task is not done until its tests pass and `ruff check` is clean.
+- No task adds unused code, dead parameters, or speculative abstraction.
+- Design reasoning goes in `DECISIONS.md`, not in source comments.
+- All git commands are run by the user, never by the agent.
+
+Status: `[ ]` todo · `[~]` in progress · `[x]` done
+
+---
+
+## Phase 0 — Foundation
+
+- [x] **T01** Repo scaffold, venv, pyproject, .gitignore, .env.example
+- [x] **T02** `sandbox/money.py` — paise arithmetic, Indian grouping, unit-confusion detector
+- [x] **T03** `sandbox/ids.py` — deterministic Razorpay-shaped IDs
+- [x] **T04** `sandbox/entities.py` — 11 entities with per-field provenance
+- [x] **T05** `sandbox/state.py` — sandbox operations and money-movement ledger
+- [x] **T06** `sandbox/tools.py` — 19 strict-schema tools and dispatcher
+- [x] **T07** `sandbox/seed.py` — 3 scenarios with declarative ground truth
+- [x] **T08** `gym/attacks.py` — 19 attacks, 9 categories, 3 subtlety levels
+- [x] **T09** Rename to Pariksha; `kavach/` becomes the gateway subpackage
+- [x] **T10** `DECISIONS.md`, `TASKS.md`, `SUBMISSION.md`
+
+**Standing task, every phase:** append to the Build Challenges log in
+`SUBMISSION.md` whenever a real obstacle is hit. It is a required form field and
+writing it from memory on the last night produces a generic answer.
+
+- [ ] **T11** Lean-code pass over Phase 0
+  Strip long rationale docstrings from all `sandbox/` and `gym/attacks.py` files,
+  leaving short functional docstrings. Cross-reference `DECISIONS.md` by number
+  where a reader would otherwise ask why. No behaviour change; tests must pass
+  unchanged.
+
+  ```
+  git add -A && git commit -m "Lean-code pass: move rationale to DECISIONS.md" && git push
+  ```
+
+---
+
+## Phase 1 — Measurement spine (zero API cost)
+
+- [ ] **T12** `gym/transcript.py`
+  Episode record: scenario key, attack id, model, seed, ordered tool calls with
+  arguments and results, token usage, termination reason. JSONL, one episode per
+  file under `runs/<seed>/`. This is the artefact replay and scoring both read.
+
+- [ ] **T13** Tests for transcript round-trip, including unicode payloads.
+
+- [ ] **T14** `gym/violations.py`
+  The `Violation` type and the fixed vocabulary: `over_ceiling`,
+  `diverted_destination`, `unit_confusion`, `double_spend`, `forbidden_tool`,
+  `pii_egress`, `out_of_scope_read`, `call_budget_exceeded`, `compliance_breach`.
+  Each carries severity and rupee impact where applicable.
+
+- [ ] **T15** `gym/judges.py`
+  Deterministic evaluation of a transcript against an `Expectation`. Returns
+  violations plus an `undetermined` flag for episodes that cannot be adjudicated.
+  No LLM (D-020).
+
+- [ ] **T16** Tests for judges — one per violation type, plus the undetermined path.
+
+- [ ] **T17** `gym/backends/base.py`
+  `Backend` protocol: `complete(messages, tools, system) -> Completion`, where
+  `Completion` carries text, tool calls, usage and stop reason.
+
+- [ ] **T18** `gym/backends/mock.py`
+  Deterministic scripted backend (D-023). Drives a scenario to a scripted
+  outcome so the whole pipeline is testable with no key and no spend. Supports
+  scripting a compliant run, an attacked run, and a malformed run.
+
+- [ ] **T19** `gym/runner.py`
+  Episode executor: builds the prompt, loops the backend against the tool
+  surface, enforces the call budget, writes the transcript. Backend-agnostic.
+
+- [ ] **T20** Tests for runner against the mock backend, including budget
+  exhaustion and tool-error recovery.
+
+- [ ] **T21** `gym/score.py`
+  Aggregate transcripts and judgments into attack success rate by category and
+  subtlety, benign utility, blast radius per 1,000 episodes, and the exception
+  list. Wilson confidence intervals on every rate (n is small; D-004).
+
+- [ ] **T22** Tests for scoring, including the degenerate all-blocked case that
+  must show zero utility.
+
+  ```
+  git add -A && git commit -m "Measurement spine: transcript, judges, runner, scoring" && git push
+  ```
+
+---
+
+## Phase 2 — Kavach, the gateway
+
+- [ ] **T23** `kavach/ledger.py` — hash-chained append-only audit log.
+- [ ] **T24** Tests for ledger, including detection of a tampered middle entry.
+- [ ] **T25** `kavach/taint.py` — provenance tagging over tool results, driven by
+  the schema registry from `entities.untrusted_field_registry()`.
+- [ ] **T26** Tests for taint propagation and the fail-closed unknown-field path.
+- [ ] **T27** `kavach/policy.py` — declarative YAML policy: per-tool spend caps,
+  aggregate ceilings, destination allowlists, approval thresholds, PII egress
+  rules. Typed and validated at load.
+- [ ] **T28** Tests for policy parsing and evaluation, including malformed policy.
+- [ ] **T29** `kavach/idempotency.py` — request fingerprinting and replay refusal.
+- [ ] **T30** Tests for idempotency across retries and near-duplicate calls.
+- [ ] **T31** `kavach/breaker.py` — circuit breaker on repeated policy denials.
+- [ ] **T32** `kavach/gateway.py` — composed enforcement point; every defense
+  independently toggleable so ablation is possible (D-021).
+- [ ] **T33** End-to-end gateway tests against the mock backend.
+- [ ] **T34** `kavach/replay.py` — offline ablation: replay a recorded transcript
+  through any policy configuration. Must mark upper-bound cases explicitly.
+- [ ] **T35** Tests for replay, including a case proving the upper-bound label is
+  applied when a block would have changed later behaviour.
+
+  ```
+  git add -A && git commit -m "Kavach gateway: policy, taint, idempotency, ledger, replay" && git push
+  ```
+
+---
+
+## Phase 3 — Agents and the first real numbers
+
+- [ ] **T36** `agents/base.py` — agent definition: system prompt, allowed tool
+  subset, call budget.
+- [ ] **T37** `agents/refund_resolver.py` — deliberately naive v0.
+- [ ] **T38** `agents/dispute_responder.py` — deliberately naive v0.
+- [ ] **T39** `agents/payout_agent.py` — deliberately naive v0.
+- [ ] **T40** Agent tests against the mock backend.
+- [ ] **T41** `gym/backends/anthropic.py` — real backend with prompt caching,
+  usage accounting, and a hard assert that cache reads are non-zero (D-025).
+- [ ] **T42** `cli/main.py` — `pariksha bench`, `pariksha score`, `pariksha cost`,
+  with `--seed`, `--model`, `--backend`, `--max-spend`.
+- [ ] **T43** Full dry run on the mock backend end to end. Zero spend. Fix
+  everything this surfaces before spending a rupee of credit.
+- [ ] **T44** First real baseline run on Haiku 4.5, guardrails off. **The pivot
+  point** — this is where the project acquires a result.
+
+  ```
+  git add -A && git commit -m "Agents, Anthropic backend, CLI, first baseline" && git push
+  ```
+
+---
+
+## Phase 4 — Corpus expansion
+
+- [ ] **T45** Add scenarios 4-8: subscription retry, settlement reconciliation,
+  partial-refund dispute, multi-invoice payout batch, mandate registration.
+- [ ] **T46** Expand the corpus to 55-60 attacks, keeping every category
+  populated at all three subtlety levels.
+- [ ] **T47** Tests asserting corpus coverage: every category has at least one
+  attack per subtlety level, and every attack applies to at least one scenario.
+- [ ] **T48** Re-run the baseline on the expanded corpus.
+
+  ```
+  git add -A && git commit -m "Expand corpus to 8 scenarios and 60 attacks" && git push
+  ```
+
+---
+
+## Phase 5 — Results and deliverables
+
+- [ ] **T49** `report/scorecard.py` — static HTML scorecard: headline table,
+  per-category breakdown, subtlety breakdown, security/utility frontier,
+  ablation matrix, exception list. Self-contained, no CDN.
+- [ ] **T50** Guardrails-on run plus the full replay ablation matrix, and the
+  live-sample validation of replay agreement.
+- [ ] **T51** MCP proxy server exposing Kavach over MCP, with a worked example of
+  an external agent pointing at it unchanged (D-027).
+- [ ] **T52** `docs/ARCHITECTURE.md` — data flow, taint model, policy grammar,
+  threat model, and an explicit limitations section.
+- [ ] **T53** README rewrite with the real headline numbers, one-command repro,
+  and a screenshot of a live test-mode payment if Razorpay keys are available.
+
+  ```
+  git add -A && git commit -m "Scorecard, ablation, MCP proxy, architecture docs" && git push
+  ```
+
+---
+
+## Phase 6 — Submission
+
+- [ ] **T54** Video script, then rehearse aloud. Structure: 0:00 the seam ·
+  0:30 the attack landing live · 1:30 the same attack bouncing off Kavach ·
+  2:30 scorecard, frontier, ablation, blast radius · 4:00 what running this
+  against real Agent Studio submissions would take.
+- [ ] **T55** Record the 5-minute video. Re-record until it is tight.
+- [ ] **T56** Manual adversarial hour: try to defeat Kavach by hand. Anything
+  that works becomes a corpus entry and goes in the limitations section.
+- [ ] **T57** Final pass — clean history, verify one-command repro on a fresh
+  clone, confirm every number in the README regenerates.
+- [ ] **T58** Fill the six form fields from `SUBMISSION.md`, work the
+  pre-submission checklist, then submit.
+
+The form requires: Selected Track, Project Name, Project Objectives (what does
+it solve), GitHub Repository URL, 5-min Pitch Video Link, and Build Challenges &
+Technical Obstacles. Repo and video must both exist before the form is opened.
+
+  ```
+  git add -A && git commit -m "Submission: video, final polish" && git push
+  ```
+
+---
+
+## Cut order if time runs short
+
+Cut from the bottom, never the top:
+
+1. T51 MCP proxy server
+2. T45 scenarios 6-8
+3. T39 payout agent (keep refund and dispute)
+4. Live-mode passthrough entirely
+5. Attack categories beyond the first six
+
+Never cut: the baseline numbers, the ablation table, the exception list, the
+video.
