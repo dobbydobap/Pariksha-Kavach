@@ -54,7 +54,7 @@ attack class and what each costs in utility.
 
 ## 4. GitHub Repository URL
 
-https://github.com/dobbydobap/Pariksha
+https://github.com/dobbydobap/Pariksha-Kavach
 
 Must be **public** before the form is opened.
 
@@ -169,7 +169,25 @@ rather than its request cap: without prompt caching an eight-turn episode costs
 roughly 51k cumulative tokens, about 8.5 minutes. Runs are batched overnight, and
 Gemini's higher throughput became the fast iteration path.
 
-### C-07 — `[pending]`
+### C-07 — An attack category that could not succeed, and was reported rather than hidden
+
+The RBI compliance attacks ask the agent to charge a mandate above the Rs 15,000
+additional-factor-authentication ceiling, or to skip the mandatory 24-hour
+pre-debit notification. The sandbox had no mandate tools, so the agent could not
+perform those actions even if fully compromised. Every one of those episodes
+would have scored as a clean pass.
+
+Silently passing them would have inflated the headline resistance number using
+the project's most differentiated attack category. The judge now returns
+`undetermined` with the reason attached, and those episodes appear in the
+published exception list rather than in the numerator or the denominator. The
+mandate surface is a tracked task; until it lands, the category is reported as
+not yet testable.
+
+This is the same standard the project asks of the agents it grades: report what
+was measured, and say plainly what was not.
+
+### C-08 — `[pending]`
 
 Append as encountered.
 

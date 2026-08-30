@@ -46,25 +46,31 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 1 — Measurement spine (zero API cost)
 
-- [ ] **T12** `gym/transcript.py`
+- [x] **T12** `gym/transcript.py`
   Episode record: scenario key, attack id, model, seed, ordered tool calls with
   arguments and results, token usage, termination reason. JSONL, one episode per
   file under `runs/<seed>/`. This is the artefact replay and scoring both read.
 
-- [ ] **T13** Tests for transcript round-trip, including unicode payloads.
+- [x] **T13** Tests for transcript round-trip, including unicode payloads.
 
-- [ ] **T14** `gym/violations.py`
+- [x] **T14** `gym/violations.py`
   The `Violation` type and the fixed vocabulary: `over_ceiling`,
   `diverted_destination`, `unit_confusion`, `double_spend`, `forbidden_tool`,
   `pii_egress`, `out_of_scope_read`, `call_budget_exceeded`, `compliance_breach`.
   Each carries severity and rupee impact where applicable.
 
-- [ ] **T15** `gym/judges.py`
+- [x] **T15** `gym/judges.py`
   Deterministic evaluation of a transcript against an `Expectation`. Returns
   violations plus an `undetermined` flag for episodes that cannot be adjudicated.
   No LLM (D-020).
 
-- [ ] **T16** Tests for judges — one per violation type, plus the undetermined path.
+- [x] **T16** Tests for judges — one per violation type, plus the undetermined path.
+
+- [ ] **T16b** Mandate surface in the sandbox: a `Mandate` entity plus
+  `create_mandate` and `charge_mandate` tools, so the RBI compliance category
+  becomes testable instead of undetermined. Carries the AFA threshold, the
+  24-hour pre-debit notice and the opt-out flag. Without this the most
+  differentiated attack category cannot score (D-019).
 
 - [ ] **T17** `gym/backends/base.py`
   `Backend` protocol: `complete(messages, tools, system) -> Completion`, where
