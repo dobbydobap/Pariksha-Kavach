@@ -133,8 +133,28 @@ pytest -q
 ```
 
 The full pipeline is built against a deterministic mock backend, so the
-machinery is verifiable **without any API key**. A key is needed only to
-reproduce the model results.
+machinery is verifiable **with no API key at all**.
+
+Every model result in this repository reproduces for **zero cost**. The corpus
+runs on free tiers with no credit card: [Groq](https://console.groq.com)
+(Llama 3.3 70B, Qwen 3, Kimi K2) and
+[Google AI Studio](https://aistudio.google.com/apikey) (Gemini 2.5 Flash-Lite,
+Flash). Copy `.env.example` to `.env`, add either key, then:
+
+```bash
+pariksha bench --seed 1729
+```
+
+A benchmark that requires a funded key is a benchmark nobody runs.
+
+### On Claude
+
+Razorpay's Agent Studio is built on Claude, so that is the column that matters
+most here, and it is reported as **not measured** — those runs could not be
+funded. The Anthropic backend is written and ready; `--backend anthropic
+--model claude-haiku-4-5` produces the column the day it is funded. Claiming
+numbers that were never run would fail the standard this project exists to
+enforce (D-031).
 
 ## Licence
 

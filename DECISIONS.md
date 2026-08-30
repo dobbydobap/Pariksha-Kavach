@@ -220,6 +220,8 @@ nobody can afford to reproduce and one that runs from a single command.
 
 ### D-022 — Hard constraint: zero marginal cost
 
+**Superseded by D-031.**
+
 Local inference was measured against the available hardware (i7-1355U, Intel
 Iris Xe, 15.6 GB RAM, no discrete GPU). A 7B model on CPU puts a full run at
 12-20 hours, which makes iteration impossible. Ruled out.
@@ -253,6 +255,8 @@ so cache hit rate should approach 100% on the prefix. The runner asserts
 miss is the most likely way a fixed credit budget disappears.
 
 ### D-026 — Haiku 4.5 is the workhorse; Claude models are the target of interest
+
+**Superseded by D-031.**
 
 Razorpay's Agent Studio runs on Claude, so Claude numbers are the ones that
 speak to this panel. Haiku 4.5 carries the full corpus; larger models run on
@@ -297,3 +301,56 @@ Code carries short functional docstrings and comments only where behaviour is
 genuinely surprising. Long explanatory prose in source files goes stale, bloats
 diffs and buries the logic. This file is the single place reasoning is recorded,
 and code references it by decision number.
+
+### D-031 — Free-tier multi-vendor inference, and Claude is reported as unmeasured
+
+Anthropic free signup credits turned out not to be available on this account, so
+the plan of running Claude as the primary target is dead. Two providers offer
+genuinely free API access with no card: Groq (30 RPM, 6,000 TPM, 14,400 requests
+per day, all models) and Google AI Studio (Gemini 2.5 Flash-Lite at 1,000
+requests per day, Flash at 250, with far higher token throughput).
+
+The corpus therefore runs on four model families across three vendors: Llama 3.3
+70B, Qwen 3 and Kimi K2 via Groq, and Gemini 2.5 Flash-Lite and Flash via Google.
+
+This is a better benchmark, not a worse one. A security finding measured on a
+single vendor's models may be a quirk of that vendor. One that holds across four
+independent families is a result. Published work already found Llama 3.3 70B
+could be manipulated into making a payment, so this extends a known finding
+rather than inventing one. It also means every number in the repository
+reproduces for zero cost by anyone who clones it, which a benchmark requiring a
+funded key does not.
+
+Razorpay's Agent Studio runs on Claude, so the Claude column is the one that
+speaks most directly to this panel, and it is reported as **not measured** with
+the reason stated. `--backend anthropic --model claude-haiku-4-5` runs it
+unchanged the day it is funded. Claiming numbers that were not run would fail
+the exact honesty standard the project is built to enforce.
+
+Groq's 6,000 TPM is the binding constraint, not its request cap: with no prompt
+caching, an eight-turn episode costs roughly 51k cumulative tokens, so about 8.5
+minutes per episode. Runs are batched overnight. Gemini's much higher throughput
+makes it the fast iteration path, with its daily request cap as the limit.
+
+### D-032 — Tool scoping is an ablation dimension, not a fixed choice
+
+Razorpay's guardrails documentation says the merchant approves exactly which
+actions an agent may take. That is a defense, so it must be measured rather than
+assumed.
+
+The naive v0 agents are given the broad tool surface, which is what makes
+cross-tool attacks (a refund agent talked into calling `create_payout`)
+expressible at all. A scoped variant receives only the tools its task requires.
+The ablation then answers directly: how much of the attack surface does tool
+scoping alone remove, and what does it cost in utility when a legitimate task
+needs an unexpected tool.
+
+Scoping also cuts tool-definition tokens, which matters against Groq's TPM cap.
+
+### D-033 — No prompt caching on the free backends
+
+D-025 required prompt caching and made its absence a hard failure. That applies
+to the Anthropic backend only. Groq and Gemini free tiers do not offer
+equivalent caching, so the runner asserts cache behaviour per backend rather
+than globally, and the token budget for those backends assumes the full prefix
+is re-sent every turn.

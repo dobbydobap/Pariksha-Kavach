@@ -132,14 +132,25 @@ writing it from memory on the last night produces a generic answer.
 - [ ] **T38** `agents/dispute_responder.py` — deliberately naive v0.
 - [ ] **T39** `agents/payout_agent.py` — deliberately naive v0.
 - [ ] **T40** Agent tests against the mock backend.
-- [ ] **T41** `gym/backends/anthropic.py` — real backend with prompt caching,
-  usage accounting, and a hard assert that cache reads are non-zero (D-025).
+- [ ] **T40b** Scoped-tool agent variants, so tool scoping becomes an ablation
+  row rather than an assumption (D-032).
+- [ ] **T41** `gym/backends/groq.py` — free-tier backend, OpenAI-compatible
+  wire format, token-per-minute throttle so runs stay inside 6,000 TPM (D-031).
+- [ ] **T41b** `gym/backends/gemini.py` — free-tier backend, daily request
+  budget tracking.
+- [ ] **T41c** `gym/backends/anthropic.py` — written but unfunded. Prompt caching
+  and the non-zero cache-read assert (D-025). Kept so the Claude column runs
+  unchanged the day it is funded.
 - [ ] **T42** `cli/main.py` — `pariksha bench`, `pariksha score`, `pariksha cost`,
   with `--seed`, `--model`, `--backend`, `--max-spend`.
 - [ ] **T43** Full dry run on the mock backend end to end. Zero spend. Fix
   everything this surfaces before spending a rupee of credit.
-- [ ] **T44** First real baseline run on Haiku 4.5, guardrails off. **The pivot
-  point** — this is where the project acquires a result.
+- [ ] **T44** First real baseline run, guardrails off, on Gemini 2.5 Flash-Lite
+  (fastest free path). **The pivot point** — this is where the project acquires
+  a result.
+- [ ] **T44b** Cross-vendor sweep: Llama 3.3 70B, Qwen 3, Kimi K2 via Groq
+  (batched overnight against the TPM cap), Gemini Flash as a second Google
+  data point.
 
   ```
   git add -A && git commit -m "Agents, Anthropic backend, CLI, first baseline" && git push

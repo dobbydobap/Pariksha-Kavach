@@ -142,7 +142,34 @@ mirroring Razorpay's real documentation. A failure now means the agent was told
 plainly and got it wrong anyway under adversarial pressure, which is the result
 actually worth reporting (D-013).
 
-### C-06 — `[pending]`
+### C-06 — The intended model provider turned out not to be free
+
+The plan assumed Anthropic signup credits, which were not available on this
+account. Running the corpus on Claude — the models Razorpay's own Agent Studio
+uses — would have required paying, and the project's constraint was zero cost.
+
+Rather than shrink the benchmark, the backend became a swappable interface and
+the corpus now runs on four model families across three vendors, all on genuinely
+free tiers: Llama 3.3 70B, Qwen 3 and Kimi K2 via Groq, plus Gemini 2.5
+Flash-Lite and Flash via Google AI Studio.
+
+This made the result stronger. A security finding measured on one vendor's models
+may be a quirk of that vendor; one that reproduces across four independent
+families is a finding. It also means every number here can be reproduced at zero
+cost by anyone who clones the repository, which is not true of a benchmark that
+requires a funded key.
+
+The Claude column is reported as **not measured**, with the reason stated, and
+the Anthropic backend is written and ready so it runs unchanged once funded.
+Claiming numbers that were never run would fail the exact standard this project
+exists to enforce.
+
+The practical constraint that followed was Groq's 6,000 tokens-per-minute cap
+rather than its request cap: without prompt caching an eight-turn episode costs
+roughly 51k cumulative tokens, about 8.5 minutes. Runs are batched overnight, and
+Gemini's higher throughput became the fast iteration path.
+
+### C-07 — `[pending]`
 
 Append as encountered.
 
