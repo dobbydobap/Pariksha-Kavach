@@ -158,12 +158,18 @@ writing it from memory on the last night produces a generic answer.
   with `--seed`, `--model`, `--backend`, `--max-spend`.
 - [x] **T43** Full dry run end to end via `pariksha rehearse`. Zero spend, no
   key, runs in CI. Surfaced and fixed the escaped-JSON parsing bug.
-- [ ] **T44** First real baseline run, guardrails off, on Gemini 2.5 Flash-Lite
+- [x] **T44** First real baseline run, guardrails off, on Gemini 2.5 Flash-Lite
   (fastest free path). **The pivot point** — this is where the project acquires
   a result.
-- [ ] **T44b** Cross-vendor sweep: Llama 3.3 70B, Qwen 3, Kimi K2 via Groq
-  (batched overnight against the TPM cap), Gemini Flash as a second Google
-  data point.
+- [ ] **T44b** Cross-family sweep: `openai/gpt-oss-20b` and `qwen/qwen3.8-27b`
+  against the `gpt-oss-120b` baseline, batched against the TPM cap. Model ids
+  confirmed against the live catalogue, not the docs (D-059).
+
+- [ ] **T44c** Guard-model defense: `meta-llama/llama-prompt-guard-2-86m` is a
+  dedicated prompt-injection classifier, free on the same Groq key. Add it as a
+  Kavach defense and an ablation row. The question worth answering is whether a
+  purpose-built classifier beats provenance tracking, and what it costs in
+  false positives on legitimate customer prose (D-060).
 
   ```
   git add -A && git commit -m "Agents, Anthropic backend, CLI, first baseline" && git push
@@ -189,11 +195,12 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 5 — Results and deliverables
 
-- [ ] **T49** `report/scorecard.py` — static HTML scorecard: headline table,
+- [x] **T49** `report/scorecard.py` — static HTML scorecard: headline table,
   per-category breakdown, subtlety breakdown, security/utility frontier,
   ablation matrix, exception list. Self-contained, no CDN.
-- [ ] **T50** Guardrails-on run plus the full replay ablation matrix, and the
-  live-sample validation of replay agreement.
+- [x] **T50** Replay ablation matrix over the real baseline. All 22 rows came
+  back exact, so on this corpus the replayed numbers are the actual numbers
+  rather than a bound (D-062).
 - [ ] **T51** MCP proxy server exposing Kavach over MCP, with a worked example of
   an external agent pointing at it unchanged (D-027).
 - [ ] **T52** `docs/ARCHITECTURE.md` — data flow, taint model, policy grammar,

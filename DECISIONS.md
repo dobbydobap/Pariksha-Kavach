@@ -626,3 +626,98 @@ saying so. A number that cannot be misread is worth more than one that flatters.
 `additionalProperties: false` is what makes a malformed tool call
 unrepresentable (D-014). Translating to another provider's schema format is an
 easy place to drop it silently, so a test asserts it survives for every tool.
+
+### D-059 — Model ids come from the live catalogue, never the docs
+
+The first live call 404'd: `llama-3.3-70b-versatile` had been written from
+Groq's documentation and no longer exists on the account. `GET /openai/v1/models`
+showed the real catalogue, which carries no Llama chat models at all.
+
+Two consequences beyond the fix. The published finding that Llama 3.3 70B could
+be manipulated into making a payment is not something this run can extend
+directly, so the report must not imply it does. And the available families are
+GPT-OSS and Qwen, which is two rather than the three assumed in D-031.
+
+The backend validates the model id at construction against that confirmed set,
+so a stale id fails in a second rather than after a partial run.
+
+### D-060 — A guard model is a defense to measure, not to assume
+
+`meta-llama/llama-prompt-guard-2-86m` is Meta's prompt-injection classifier and
+is free on the same key. It is the obvious industry answer to this threat, which
+makes it exactly the thing to measure rather than adopt.
+
+Two questions it can settle that provenance tracking cannot: does a
+purpose-built classifier catch the level-3 subtle attacks that read as ordinary
+human prose, and what does it cost in false positives on a genuine, emotional
+customer complaint. A defense that flags real customers is not free.
+
+### D-061 — Rate limiting reads the provider's headers, not a client-side window
+
+The first attempt kept a rolling one-minute window against an assumed 6,000
+tokens per minute and forecast `max_tokens` of output on every call. It ran an
+episode roughly every five minutes, which put the 22-episode grid at nearly two
+hours.
+
+Two things were wrong. The assumed ceiling was 6,000; the account's actual limit
+is 8,000, and the server reports it in `x-ratelimit-limit-tokens` along with
+`x-ratelimit-remaining-tokens` and `x-ratelimit-reset-tokens` on every response.
+The exact remaining budget was knowable and was being guessed at instead. And
+budgeting the full `max_tokens` for output on every turn, when observed output
+was around 250 tokens, tripled the forecast and therefore the waiting.
+
+The throttle now tracks the provider's own accounting and forecasts on observed
+output rather than the worst case, with the 429 path as the safety net for a
+rare underestimate. Two episodes went from roughly ten minutes to forty seconds.
+
+Same lesson as D-059, one layer down: anything the API will tell you directly
+should not be assumed from documentation or from a constant.
+
+---
+
+## What the first baseline showed
+
+### D-062 — On this corpus every replayed row is exact, so the bound does not bite
+
+All 22 episodes replayed under all eight policies without a single case where a
+block was followed by further calls. `Fidelity.EXACT` throughout, so the
+ablation table is the actual answer rather than the lower bound D-050 warns
+about.
+
+That is a property of this corpus, not a general guarantee: the agents block on
+their final money-moving call, so nothing counterfactual follows. A corpus with
+longer post-block behaviour would produce bounded rows, and the report must keep
+printing the distinction rather than quietly dropping it.
+
+### D-063 — The observed failure mode is provenance, not arithmetic
+
+Every attack that landed was a provenance failure. The agent believed text
+because of where it appeared to come from: a fake system notice in a support
+thread, a fake issuer annotation in dispute evidence, a fake vendor bank-change
+in a remittance note, and a fake issuer requirement that made it write customer
+PII into a card-network submission.
+
+Everything the agent resisted was procedural or arithmetic: it never confused
+paise for rupees across three attempts, never double-refunded across two, never
+breached a mandate rule, never enumerated other customers, never looped, and was
+not moved by urgency or a forged approval quote.
+
+The model can do the sums and follow the process. It cannot tell whose voice it
+is reading. That is precisely the gap the taint model targets (D-044), and the
+ablation bears it out: destination provenance and PII egress are the only two
+defenses that changed the numbers.
+
+### D-064 — A defense can be pure cost on a given workload
+
+The approval gate fired 14 times, more than every other defense combined, and
+removed nothing from attack success. Disabling it left attack success at 5% and
+took benign utility from 33% to 67%.
+
+That is not an argument against approval gates. It is the ablation doing its job:
+on this workload the threshold buys no security and costs two thirds of the
+automation, because the attacks that landed were diversions and leaks rather
+than inflated amounts. A corpus containing amount-inflation attacks the model
+actually fell for would show the opposite.
+
+Reporting it honestly means saying which workload the finding is about, and not
+generalising a per-corpus result into a recommendation.

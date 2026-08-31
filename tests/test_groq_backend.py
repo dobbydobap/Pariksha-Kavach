@@ -6,12 +6,8 @@ import json
 
 import pytest
 
-from pariksha.gym.backends.groq import (
-    GroqBackend,
-    TokenThrottle,
-    to_openai_messages,
-    to_openai_tools,
-)
+from pariksha.gym.backends.groq import GroqBackend, to_openai_messages, to_openai_tools
+from pariksha.gym.backends.throttle import RateLimit, parse_duration
 from pariksha.sandbox.tools import TOOLS
 
 
@@ -118,28 +114,52 @@ def test_a_full_exchange_round_trips_in_order():
 
 
 # ---------------------------------------------------------------------------
-# Throttle
+# Rate limiting, driven by the provider's headers
 # ---------------------------------------------------------------------------
 
 
-def test_the_throttle_lets_traffic_under_the_ceiling_straight_through():
-    t = TokenThrottle(tokens_per_minute=6000)
-    t.record(1000)
-    assert t.wait_for(1000) == 0.0
+def test_groq_reset_durations_parse():
+    assert parse_duration("577ms") == 0.577
+    assert parse_duration("2.5s") == 2.5
+    assert parse_duration("1m30s") == 90.0
+    assert parse_duration("nonsense") == 0.0
 
 
-def test_the_throttle_does_not_deadlock_on_an_oversized_single_request():
-    """One request larger than the whole window must proceed, not hang."""
-    t = TokenThrottle(tokens_per_minute=100)
-    assert t.wait_for(500) == 0.0
+def test_headers_populate_the_budget():
+    limit = RateLimit()
+    limit.update(
+        {
+            "x-ratelimit-limit-tokens": "8000",
+            "x-ratelimit-remaining-tokens": "7923",
+            "x-ratelimit-reset-tokens": "577ms",
+        }
+    )
+    assert (limit.limit_tokens, limit.remaining_tokens) == (8000, 7923)
+    assert limit.reset_seconds == 0.577
 
 
-def test_spend_ages_out_of_the_window():
-    import time as clock
+def test_no_wait_before_any_response_has_been_seen():
+    """The first call cannot know the budget, so it must not stall."""
+    assert RateLimit().wait_for(5000) == 0.0
 
-    t = TokenThrottle(tokens_per_minute=6000)
-    t._window.append((clock.monotonic() - 120, 5000))
-    assert t.wait_for(5000) == 0.0
+
+def test_no_wait_when_the_budget_covers_the_forecast():
+    limit = RateLimit(limit_tokens=8000, remaining_tokens=7000)
+    assert limit.wait_for(3000) == 0.0
+
+
+def test_a_forecast_larger_than_the_whole_budget_proceeds():
+    """Refusing it would stall the run forever; the 429 path is the net."""
+    limit = RateLimit(limit_tokens=8000, remaining_tokens=100)
+    assert limit.wait_for(9000) == 0.0
+
+
+def test_spending_debits_locally_so_consecutive_calls_pace():
+    limit = RateLimit(limit_tokens=8000, remaining_tokens=8000)
+    limit.spend(3000)
+    assert limit.remaining_tokens == 5000
+    limit.spend(99999)
+    assert limit.remaining_tokens == 0
 
 
 # ---------------------------------------------------------------------------

@@ -4,10 +4,10 @@ Groq speaks the OpenAI chat-completions shape, so this is mostly translation
 from the internal content-block format (D-039). Raw httpx rather than an SDK:
 one endpoint, one request shape, and no dependency added for it.
 
-The binding constraint on the free tier is 6,000 tokens per minute, not the
-14,400 daily requests. Without prompt caching an eight-turn episode costs
-roughly 51k cumulative tokens, so the throttle below is what keeps a long run
-alive rather than 429-ing halfway through (D-031, D-033).
+The binding constraint is tokens per minute, not requests per day. Without
+prompt caching the whole prompt is billed every turn, so pacing is what keeps a
+long run alive. The ceiling and the remaining budget come from the provider's
+own response headers rather than a client-side guess (D-061).
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ from __future__ import annotations
 import json
 import os
 import time
-from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
 
 from pariksha.gym.backends.base import Completion, Message, ToolUse
+from pariksha.gym.backends.throttle import RateLimit
 from pariksha.gym.transcript import Usage
 
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
@@ -34,40 +34,6 @@ MODELS = {
     "qwen/qwen3.8-27b",
     "qwen/qwen3.6-27b",
 }
-
-FREE_TIER_TPM = 6000
-
-
-class TokenThrottle:
-    """Keeps a rolling minute under a token-per-minute ceiling.
-
-    Groq bills the whole prompt every turn, so cost per episode climbs with
-    conversation length. Sleeping before a request that would breach the window
-    is cheaper than being rejected after sending it.
-    """
-
-    def __init__(self, tokens_per_minute: int = FREE_TIER_TPM) -> None:
-        self.limit = tokens_per_minute
-        self._window: deque[tuple[float, int]] = deque()
-
-    def _spent(self, now: float) -> int:
-        while self._window and now - self._window[0][0] > 60:
-            self._window.popleft()
-        return sum(tokens for _, tokens in self._window)
-
-    def wait_for(self, tokens: int) -> float:
-        """Block until ``tokens`` fit in the window. Returns seconds slept."""
-        slept = 0.0
-        while True:
-            now = time.monotonic()
-            if self._spent(now) + tokens <= self.limit or not self._window:
-                return slept
-            pause = 60 - (now - self._window[0][0]) + 0.1
-            time.sleep(pause)
-            slept += pause
-
-    def record(self, tokens: int) -> None:
-        self._window.append((time.monotonic(), tokens))
 
 
 def to_openai_tools(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -137,10 +103,11 @@ class GroqBackend:
     name: str = "groq"
     api_key: str = field(default_factory=lambda: os.environ.get("GROQ_API_KEY", ""))
     temperature: float = 0.0
-    max_tokens: int = 1024
+    max_tokens: int = 900
     timeout: float = 120.0
-    throttle: TokenThrottle = field(default_factory=TokenThrottle)
+    limit: RateLimit = field(default_factory=RateLimit)
     max_retries: int = 4
+    _observed_output: int = field(default=250, init=False)
 
     def __post_init__(self) -> None:
         if not self.api_key:
@@ -164,8 +131,12 @@ class GroqBackend:
             "max_tokens": self.max_tokens,
         }
 
-        # Rough forecast so the throttle can pace before the request goes out.
-        self.throttle.wait_for(len(json.dumps(body)) // 4 + self.max_tokens)
+        # Forecast on observed output, not max_tokens. Budgeting for the
+        # worst case on every turn triples wall-clock for no benefit; a rare
+        # underestimate is absorbed by the 429 path.
+        forecast = len(json.dumps(body)) // 4 + self._observed_output
+        self.limit.wait_for(forecast)
+        self.limit.spend(forecast)
 
         payload = self._post(body)
         if isinstance(payload, Completion):
@@ -176,7 +147,7 @@ class GroqBackend:
             input_tokens=usage_raw.get("prompt_tokens", 0),
             output_tokens=usage_raw.get("completion_tokens", 0),
         )
-        self.throttle.record(usage_raw.get("total_tokens", 0))
+        self._observed_output = max(self._observed_output, usage_raw.get("completion_tokens", 0))
 
         message = (payload.get("choices") or [{}])[0].get("message") or {}
         tool_uses = []
@@ -212,6 +183,8 @@ class GroqBackend:
                 last = f"transport error: {e}"
                 time.sleep(2**attempt)
                 continue
+
+            self.limit.update(response.headers)
 
             if response.status_code == 200:
                 return response.json()

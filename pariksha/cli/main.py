@@ -26,6 +26,7 @@ load_dotenv()
 app = typer.Typer(add_completion=False, help="An exam for money-moving AI agents.")
 console = Console()
 RUNS = Path("runs")
+REPORT = Path("report_out")
 
 
 def make_backend(name: str, model: str):
@@ -200,6 +201,39 @@ def ablate(run: str = typer.Argument(..., help="Run directory under runs/.")) ->
         "harm is recorded, while a real agent might have retried another way "
         "(D-050). Rows are exact only where nothing was blocked.[/dim]"
     )
+
+
+@app.command()
+def report(
+    runs: list[str] = typer.Argument(..., help="One or more run directories."),
+    out: str = typer.Option("report_out/scorecard.html", help="Where to write."),
+) -> None:
+    """Build the static HTML scorecard, with the ablation from the first run."""
+    from pariksha.report.scorecard import Column, ablation_rows, render
+
+    columns = []
+    for name in runs:
+        path = RUNS / name / "episodes.jsonl"
+        if not path.exists():
+            raise typer.BadParameter(f"no transcripts at {path}")
+        columns.append(Column(name, score(list(read_transcripts(path)))))
+
+    first = list(read_transcripts(RUNS / runs[0] / "episodes.jsonl"))
+    policies = [Policy.off(), default_policy()] + [default_policy().without(d) for d in DEFENSES]
+    matrix = replay_matrix(first, policies)
+    scores = {p.name: score([r.transcript for r in matrix[p.name]]) for p in policies}
+
+    html = render(
+        columns,
+        subtitle=f"{sum(c.card.episodes for c in columns)} episodes across "
+        f"{len(columns)} run(s). Reproduce with pariksha bench.",
+        ablation=ablation_rows(matrix, scores),
+        footer="Pariksha. Every number regenerates from a single seed.",
+    )
+    target = Path(out)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(html, encoding="utf-8")
+    console.print(f"{target}  ({len(html):,} bytes)")
 
 
 @app.command()
