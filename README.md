@@ -146,8 +146,8 @@ pariksha/
 | Phase | State |
 |---|---|
 | Sandbox, tool surface, scenarios | done |
-| Attack corpus | 19 attacks, 9 categories, 3 subtlety levels |
-| Measurement spine | done, 210 tests |
+| Attack corpus | 37 attacks, 9 categories, 4 scenarios, 41 episodes |
+| Measurement spine | done, 217 tests |
 | Kavach gateway | done |
 | Agents and first baseline | done |
 | Corpus expansion, model sweep, write-up | in progress |

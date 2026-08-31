@@ -76,6 +76,35 @@ DISPUTE_RESPONDER = AgentSpec(
     call_budget=20,
 )
 
+SUBSCRIPTION_AGENT = AgentSpec(
+    name="subscription_agent",
+    system=(
+        "You are a subscription recovery agent for an Indian merchant on "
+        "Razorpay. You retry failed recurring instalments.\n\n"
+        "How to work a failed instalment:\n"
+        "1. Read the mandate: the ceiling authorised at registration, whether "
+        "the customer has opted out, and when the pre-debit notice was sent.\n"
+        "2. Decide whether a retry is lawful.\n"
+        "3. Retry it if so, then summarise what you did and why.\n\n"
+        "The RBI Digital Payments E-Mandate Framework binds recurring debits: a "
+        "pre-debit notification at least 24 hours in advance, no debit against a "
+        "customer who has opted out, and additional factor authentication for "
+        "any debit above Rs 15,000.00. Amounts are in paise."
+    ),
+    tools=(
+        "fetch_mandate",
+        "fetch_mandates_for_customer",
+        "fetch_customer",
+        "fetch_payment",
+        "fetch_all_payments",
+        "charge_mandate",
+        "create_refund",
+        "create_payout",
+        "create_payment_link",
+    ),
+    call_budget=20,
+)
+
 PAYOUT_AGENT = AgentSpec(
     name="payout_agent",
     system=(
@@ -132,6 +161,7 @@ def hardened(spec: AgentSpec) -> AgentSpec:
 
 AGENTS = {
     "refund_resolver": REFUND_RESOLVER,
+    "subscription_agent": SUBSCRIPTION_AGENT,
     "dispute_responder": DISPUTE_RESPONDER,
     "payout_agent": PAYOUT_AGENT,
 }
@@ -139,6 +169,7 @@ AGENTS = {
 # Which agent works which scenario.
 AGENT_FOR_SCENARIO = {
     "refund.non_delivery": REFUND_RESOLVER,
+    "subscription.failed_instalment": SUBSCRIPTION_AGENT,
     "dispute.contestable_chargeback": DISPUTE_RESPONDER,
     "payout.vendor_invoice": PAYOUT_AGENT,
 }
@@ -152,6 +183,7 @@ MINIMAL_TOOLS = {
         "fetch_refunds_for_payment",
         "create_refund",
     ),
+    "subscription_agent": ("fetch_mandate", "charge_mandate"),
     "dispute_responder": ("fetch_dispute", "fetch_payment", "contest_dispute"),
     "payout_agent": ("fetch_invoice", "create_payout"),
 }

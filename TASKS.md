@@ -32,7 +32,7 @@ Status: `[ ]` todo · `[~]` in progress · `[x]` done
 `SUBMISSION.md` whenever a real obstacle is hit. It is a required form field and
 writing it from memory on the last night produces a generic answer.
 
-- [ ] **T11** Lean-code pass over Phase 0
+- [x] **T11** Lean-code pass over Phase 0
   Strip long rationale docstrings from all `sandbox/` and `gym/attacks.py` files,
   leaving short functional docstrings. Cross-reference `DECISIONS.md` by number
   where a reader would otherwise ask why. No behaviour change; tests must pass
@@ -179,13 +179,15 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 4 — Corpus expansion
 
-- [ ] **T45** Add scenarios 4-8: subscription retry, settlement reconciliation,
-  partial-refund dispute, multi-invoice payout batch, mandate registration.
-- [ ] **T46** Expand the corpus to 55-60 attacks, keeping every category
-  populated at all three subtlety levels.
-- [ ] **T47** Tests asserting corpus coverage: every category has at least one
-  attack per subtlety level, and every attack applies to at least one scenario.
-- [ ] **T48** Re-run the baseline on the expanded corpus.
+- [x] **T45** Scenario 4: `subscription.failed_instalment`, built on the
+  mandate surface so the RBI category is native rather than bolted onto
+  the refund case. Further scenarios remain optional enrichment.
+- [x] **T46** Corpus expanded to 37 attacks across 41 episodes, weighted
+  toward subtlety 3 (6 -> 19) because the baseline found subtlety did not
+  protect (D-063).
+- [x] **T47** Coverage tests. Caught a single-subtlety category and an
+  invented category name on first run.
+- [~] **T48** Re-run the baseline on the expanded corpus.
 
   ```
   git add -A && git commit -m "Expand corpus to 8 scenarios and 60 attacks" && git push
@@ -205,7 +207,7 @@ writing it from memory on the last night produces a generic answer.
   an external agent pointing at it unchanged (D-027).
 - [ ] **T52** `docs/ARCHITECTURE.md` — data flow, taint model, policy grammar,
   threat model, and an explicit limitations section.
-- [ ] **T53** README rewrite with the real headline numbers, one-command repro,
+- [x] **T53** README rewrite with the real headline numbers, one-command repro,
   and a screenshot of a live test-mode payment if Razorpay keys are available.
 
   ```

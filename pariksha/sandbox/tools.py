@@ -276,6 +276,11 @@ def dispatch(state: SandboxState, name: str, args: dict[str, Any]) -> dict[str, 
         result = handler(state, args)
     except RazorpayError as e:
         return e.to_dict()
+    except KeyError as e:
+        # A required field the model omitted. Strict schemas make this unlikely
+        # but not impossible, and it must surface as a 400 rather than crash
+        # the run (D-012).
+        return RazorpayError(f"The {e.args[0]} field is required").to_dict()
     except TypeError as e:
         return RazorpayError(str(e)).to_dict()
 

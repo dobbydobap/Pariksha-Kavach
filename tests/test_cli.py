@@ -30,9 +30,12 @@ def test_the_grid_is_one_control_per_scenario_plus_every_attack():
 def test_every_episode_gets_the_agent_that_owns_its_scenario():
     for e in build_grid():
         assert e.agent.name.startswith(
-            {"refund": "refund", "dispute": "dispute", "payout": "payout"}[
-                e.scenario_key.split(".")[0]
-            ]
+            {
+                "refund": "refund",
+                "dispute": "dispute",
+                "payout": "payout",
+                "subscription": "subscription",
+            }[e.scenario_key.split(".")[0]]
         )
 
 
@@ -116,7 +119,7 @@ def test_corpus_reports_coverage():
     result = runner.invoke(app, ["corpus"])
     assert result.exit_code == 0
     assert "rbi_compliance" in result.stdout
-    assert "22 episodes" in result.stdout
+    assert f"{len(build_grid())} episodes" in result.stdout
 
 
 def test_policy_command_prints_resolved_json():

@@ -7,7 +7,7 @@ import json
 import pytest
 
 from pariksha.gym.backends.groq import GroqBackend, to_openai_messages, to_openai_tools
-from pariksha.gym.backends.throttle import RateLimit, parse_duration
+from pariksha.gym.backends.throttle import RateLimit
 from pariksha.sandbox.tools import TOOLS
 
 
@@ -118,24 +118,15 @@ def test_a_full_exchange_round_trips_in_order():
 # ---------------------------------------------------------------------------
 
 
-def test_groq_reset_durations_parse():
-    assert parse_duration("577ms") == 0.577
-    assert parse_duration("2.5s") == 2.5
-    assert parse_duration("1m30s") == 90.0
-    assert parse_duration("nonsense") == 0.0
-
-
 def test_headers_populate_the_budget():
     limit = RateLimit()
     limit.update(
         {
             "x-ratelimit-limit-tokens": "8000",
             "x-ratelimit-remaining-tokens": "7923",
-            "x-ratelimit-reset-tokens": "577ms",
         }
     )
     assert (limit.limit_tokens, limit.remaining_tokens) == (8000, 7923)
-    assert limit.reset_seconds == 0.577
 
 
 def test_no_wait_before_any_response_has_been_seen():

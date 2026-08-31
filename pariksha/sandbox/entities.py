@@ -280,8 +280,3 @@ ENTITY_TYPES: dict[str, type[RazorpayEntity]] = {
     "payment_link": PaymentLink,
     "support_message": SupportMessage,
 }
-
-
-def untrusted_field_registry() -> dict[str, frozenset[str]]:
-    """Entity type -> untrusted field names, for the gateway's taint tracker."""
-    return {name: cls.untrusted_fields() for name, cls in ENTITY_TYPES.items()}

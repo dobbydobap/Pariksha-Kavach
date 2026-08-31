@@ -351,7 +351,33 @@ failure: treating documentation and constants as authoritative for something the
 API reports directly. Both were caught by running the thing rather than
 reasoning about it.
 
-### C-15 — `[pending]`
+### C-15 — Auditing for dead code found a test guarding nothing
+
+A sweep for unreferenced definitions turned up four. Three were ordinary: two
+helpers written for callers that never appeared, and an unused constant.
+
+The fourth was the interesting one. The rate limiter parsed a reset duration out
+of a provider header, stored it, and had a passing test asserting the parse was
+correct -- while the code that decides how long to wait never read the field at
+all. The wait is computed from the shortfall and the refill rate, which is the
+right calculation for a bucket that refills continuously.
+
+So there was a green test, on a correct parser, feeding a field nothing
+consumed. That is worse than having no test, because it reads as coverage of
+behaviour that does not exist.
+
+The same audit found a scenario carrying an `agent` field that duplicated the
+real agent mapping and had already drifted out of sync with it, and a probe
+script exposed a genuine crash: the tool dispatcher let `KeyError` escape, so a
+model omitting a required argument would have killed an entire run instead of
+receiving an error it could recover from.
+
+The probe that found the crash became a test of its own: every attack must be
+readable by the agent it targets. An attack sitting in a field the agent never
+fetches is not being tested -- it scores as resistance the agent never earned,
+and the episode runs, completes and reports a pass with nothing looking wrong.
+
+### C-16 — `[pending]`
 
 Append as encountered.
 

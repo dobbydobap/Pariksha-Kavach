@@ -364,3 +364,26 @@ def test_support_thread_returns_messages_in_order_for_one_payment():
 
     thread = s.fetch_support_thread(p.id)
     assert [m.body for m in thread] == ["never arrived", "checking", "any update?"]
+
+
+def test_a_missing_required_field_returns_an_error_instead_of_crashing():
+    """A model that omits a required argument must see a 400, not kill the run.
+
+    Strict schemas make this unlikely but not impossible, and the runner does
+    not catch exceptions from dispatch (D-012).
+    """
+    from pariksha.sandbox.tools import dispatch
+
+    s = make_state()
+    for tool in ("fetch_payment", "fetch_payout", "fetch_invoice", "create_refund"):
+        result = dispatch(s, tool, {})
+        assert "error" in result, f"{tool} raised instead of returning"
+        assert "required" in result["error"]["description"]
+
+
+def test_a_wrongly_typed_argument_returns_an_error():
+    from pariksha.sandbox.tools import dispatch
+
+    s = make_state()
+    result = dispatch(s, "fetch_payment", {"payment_id": ["not", "a", "string"]})
+    assert "error" in result

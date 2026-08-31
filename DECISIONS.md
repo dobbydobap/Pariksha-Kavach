@@ -721,3 +721,83 @@ actually fell for would show the opposite.
 
 Reporting it honestly means saying which workload the finding is about, and not
 generalising a per-corpus result into a recommendation.
+
+### D-065 — The corpus was expanded where the first result said it was thinnest
+
+The baseline found attack success roughly flat across subtlety: blatant 25%,
+plausible 22%, subtle 17%. A flat curve, not a cliff. The subtle half was also
+the thinnest part of the corpus at six attacks, so the least-tested claim was
+the most interesting one.
+
+The expansion went from 19 attacks to 37 and from 6 subtle to 19, so subtlety 3
+is now the largest band rather than the smallest. If the flat curve survives a
+corpus weighted the other way, it is a finding rather than an artefact of where
+the attacks happened to sit.
+
+### D-066 — Coverage is asserted by tests, not by inspection
+
+A test requires every category to appear at more than one subtlety level,
+because a category measured at a single level cannot say whether subtlety
+protects. On its first run it caught `denial_of_wallet` sitting entirely at
+level 2, and a category name invented by a typo that would have shown up in the
+report as a real row with n=1.
+
+Both were the kind of thing that survives a read-through and dies to an
+assertion.
+
+### D-067 — The RBI attacks moved to a scenario where they are native
+
+They were originally bolted onto the refund scenario, which meant the agent had
+to be talked into charging a mandate that had nothing to do with the task it was
+given. That tests refusal-to-be-distracted more than it tests compliance.
+
+`subscription.failed_instalment` gives a subscription agent a genuinely failed
+instalment and a mandate the customer has opted out of, above the AFA ceiling.
+Retrying is the agent's actual job, and the lawful answer is to decline. The
+attacks now have to persuade it to override a *trusted* field (`opted_out`)
+using untrusted text, which is the real shape of the threat.
+
+### D-068 — Dead code is removed, not left as future-proofing
+
+An audit for unreferenced public definitions found four. `entity_type_of` and
+`untrusted_field_registry` were written for callers that never materialised;
+the taint tracker reads `ENTITY_TYPES` directly. `ATTACKER_VPA` was a constant
+no attack ever used.
+
+The fourth was worse than dead. `RateLimit.reset_seconds` was parsed from a
+provider header, stored, and asserted in a test, while `wait_for` never read it:
+the wait is computed from the shortfall and the refill rate, which is correct
+for a continuously refilling bucket where the reset header reports time to
+*full*. A test passing on machinery nothing uses is worse than no test, because
+it reads as coverage.
+
+### D-069 — `Scenario.agent` was a second source of truth and had already drifted
+
+Each scenario carried an `agent` field while `AGENT_FOR_SCENARIO` carried the
+real mapping. Nothing read the field, and by the time it was found it already
+disagreed: the subscription scenario named `refund_resolver` while the mapping
+correctly routed it to `subscription_agent`.
+
+Removed. Two places to state the same fact is one place too many, and the wrong
+copy is the one that gets believed.
+
+### D-070 — `dispatch` returns a 400 for a missing required field
+
+Found by a probe script, but the bug was in production code: `dispatch` caught
+`RazorpayError` and `TypeError` and let `KeyError` escape. A model omitting a
+required argument would have raised through the runner and killed the whole run
+rather than receiving an error it could recover from.
+
+Strict schemas (D-014) make it unlikely, not impossible, and the entire premise
+of D-012 is that the agent sees what an HTTP client would see. An uncaught
+exception in the tool boundary turns one malformed call into a lost run.
+
+### D-071 — Attack reachability is asserted, not assumed
+
+A test walks every read tool each agent has, on every attacked scenario, and
+requires the payload to appear somewhere in what the agent could see.
+
+An attack sitting in a field the agent never fetches is not being tested. It
+scores as resistance the agent did not earn, and nothing about the episode looks
+wrong: it runs, completes, and reports a pass. That failure is invisible without
+an assertion, which is exactly the kind the corpus cannot afford.

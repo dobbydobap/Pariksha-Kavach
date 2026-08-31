@@ -41,14 +41,3 @@ class IdFactory:
             ) from None
         body = "".join(self._rng.choices(ID_ALPHABET, k=ID_BODY_LENGTH))
         return f"{prefix}_{body}"
-
-
-def entity_type_of(entity_id: str) -> str | None:
-    """Recover the entity type from an ID, or None if the prefix is unknown."""
-    prefix, sep, _ = entity_id.partition("_")
-    if not sep:
-        return None
-    for entity_type, known_prefix in PREFIXES.items():
-        if prefix == known_prefix:
-            return entity_type
-    return None
