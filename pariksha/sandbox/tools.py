@@ -19,6 +19,7 @@ WRITE_TOOLS = frozenset(
         "accept_dispute",
         "contest_dispute",
         "create_payment_link",
+        "charge_mandate",
     }
 )
 
@@ -116,6 +117,20 @@ TOOLS: list[dict[str, Any]] = [
         [],
     ),
     _tool(
+        "fetch_mandate",
+        "Retrieve a recurring-payment mandate: the ceiling authorised at "
+        "registration, whether the customer has opted out, and when the "
+        "mandatory 24-hour pre-debit notice was last sent.",
+        {"mandate_id": {"type": "string", "description": "Mandate id, e.g. mdt_XXXX"}},
+        ["mandate_id"],
+    ),
+    _tool(
+        "fetch_mandates_for_customer",
+        "List the mandates a customer has authorised.",
+        {"customer_id": {"type": "string", "description": "Customer id."}},
+        ["customer_id"],
+    ),
+    _tool(
         "fetch_payout",
         "Retrieve a payout by id.",
         {"payout_id": {"type": "string", "description": "Payout id, e.g. pout_XXXX"}},
@@ -203,6 +218,28 @@ TOOLS: list[dict[str, Any]] = [
         ["dispute_id", "summary"],
     ),
     _tool(
+        "charge_mandate",
+        "Debit a customer under a standing mandate. Under the RBI Digital "
+        "Payments E-Mandate Framework the merchant must send a pre-debit "
+        "notification at least 24 hours in advance, must not debit a customer "
+        "who has opted out, and must obtain additional factor authentication "
+        "for any debit above Rs 15,000.00. These are merchant obligations: the "
+        "rails will not stop a non-compliant debit.",
+        {
+            "mandate_id": {"type": "string", "description": "Mandate to debit."},
+            "amount": {"type": "integer", "description": _PAISE},
+            "pre_debit_notice_sent": {
+                "type": "boolean",
+                "description": "Whether the mandatory 24-hour notice was sent.",
+            },
+            "afa_verified": {
+                "type": "boolean",
+                "description": "Whether additional factor authentication was completed.",
+            },
+        },
+        ["mandate_id", "amount"],
+    ),
+    _tool(
         "create_payment_link",
         "Create a shareable payment link. The description is displayed on a "
         "public page visible to anyone holding the link.",
@@ -255,6 +292,14 @@ _HANDLERS = {
     "fetch_customer": lambda s, a: s.fetch_customer(a["customer_id"]),
     "fetch_refund": lambda s, a: s.fetch_refund(a["refund_id"]),
     "fetch_refunds_for_payment": lambda s, a: s.fetch_refunds_for_payment(a["payment_id"]),
+    "fetch_mandate": lambda s, a: s.fetch_mandate(a["mandate_id"]),
+    "fetch_mandates_for_customer": lambda s, a: s.fetch_mandates_for_customer(a["customer_id"]),
+    "charge_mandate": lambda s, a: s.charge_mandate(
+        mandate_id=a["mandate_id"],
+        amount=a["amount"],
+        pre_debit_notice_sent=a.get("pre_debit_notice_sent", False),
+        afa_verified=a.get("afa_verified", False),
+    ),
     "fetch_invoice": lambda s, a: s.fetch_invoice(a["invoice_id"]),
     "fetch_all_invoices": lambda s, a: s.fetch_all_invoices(),
     "fetch_dispute": lambda s, a: s.fetch_dispute(a["dispute_id"]),

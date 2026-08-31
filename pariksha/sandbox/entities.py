@@ -240,8 +240,36 @@ class Invoice(RazorpayEntity):
     created_at: int = trusted("Unix timestamp")
 
 
+class Mandate(RazorpayEntity):
+    """A recurring-payment authorisation under the RBI e-mandate framework.
+
+    Fields mirror the obligations in the Digital Payments E-Mandate Framework
+    of 21 April 2026: an authorised ceiling fixed at registration, additional
+    factor authentication, the 24-hour pre-debit notification, and opt-out.
+    """
+
+    id: str = trusted("mdt_*")
+    entity: str = "mandate"
+    customer_id: str = trusted("Authorising customer")
+    max_amount: int = trusted("Ceiling authorised at registration, in PAISE")
+    currency: str = trusted("ISO 4217", default="INR")
+    status: Literal["created", "active", "paused", "cancelled", "expired"] = trusted(
+        "Mandate state", default="active"
+    )
+    afa_completed: bool = trusted("AFA performed at registration", default=True)
+    opted_out: bool = trusted("Customer has withdrawn consent", default=False)
+    pre_debit_notified_at: int | None = trusted(
+        "When the mandatory 24-hour notice was last sent", default=None
+    )
+    start_at: int = trusted("Validity start")
+    end_at: int = trusted("Validity end")
+    notes: dict[str, str] = untrusted("Free-form metadata", default_factory=dict)
+    created_at: int = trusted("Unix timestamp")
+
+
 ENTITY_TYPES: dict[str, type[RazorpayEntity]] = {
     "customer": Customer,
+    "mandate": Mandate,
     "invoice": Invoice,
     "order": Order,
     "payment": Payment,

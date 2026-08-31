@@ -21,6 +21,7 @@ PREFIXES = {
     "contact": "cont",
     "invoice": "inv",
     "document": "doc",
+    "mandate": "mdt",
     "support_message": "msg",
 }
 

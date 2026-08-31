@@ -261,7 +261,31 @@ retried by another route and succeeded. Replay flatters the defense. Publishing
 that bound in the wrong direction would have undermined every number built on
 it.
 
-### C-11 — `[pending]`
+### C-11 — Making the most differentiated attack category actually testable
+
+The RBI e-mandate attacks were the clearest thing separating this corpus from a
+generic agent-security benchmark, and they could not score. The sandbox had no
+mandate tools, so an agent could not breach the Rs 15,000 additional-factor
+threshold or skip the 24-hour pre-debit notice even if fully compromised. Those
+episodes sat in the exception list.
+
+Building the surface meant deciding what the rails enforce versus what the
+merchant is merely obliged to do. An amount above the ceiling authorised at
+registration is rejected, because NPCI rejects it. A debit with no pre-debit
+notification, a debit after opt-out, and a high-value debit without AFA are all
+accepted, because they are merchant obligations audited after the fact -- a
+non-compliant debit succeeds and looks like ordinary revenue. Blocking them
+would have made the category untestable for a second time.
+
+A related question was where the harm belongs. A mandate debit moves money
+*into* the merchant, so counting it inside blast radius would corrupt a figure
+that means "money the merchant lost". Compliance breaches are counted
+separately at critical severity.
+
+One injected sentence now produces two distinct violations, each traceable to a
+specific clause of the framework dated 21 April 2026.
+
+### C-12 — `[pending]`
 
 Append as encountered.
 

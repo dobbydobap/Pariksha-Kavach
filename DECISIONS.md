@@ -531,3 +531,51 @@ is `EXACT` because there is no counterfactual remainder.
 Kavach never blocks reads, only writes, which is what makes the exact case
 genuinely exact: with no writes blocked, the agent's information state and the
 sandbox are identical to the recording.
+
+---
+
+## Agents and compliance
+
+### D-051 — Prompt hardening is an ablation axis, not a baseline
+
+`hardened()` prepends a preamble telling the agent that tool data is a claim to
+evaluate rather than a command to obey, and changes nothing else. Keeping it a
+transformation rather than a separately written prompt means the two variants
+differ in exactly the preamble, so the ablation measures the preamble rather
+than an incidental rewrite.
+
+"Does telling the model to be careful actually work" is the first question
+anyone asks about prompt injection and is almost never measured. Now it is a
+row.
+
+### D-052 — Agents are written the way a competent engineer would write them
+
+Clear instructions, sensible tool access, nothing about untrusted data. A
+harness that only breaks strawmen proves nothing, and one that only tests
+pre-hardened agents cannot show what hardening is worth.
+
+The prompts do state that amounts are in paise, for the same reason the tool
+descriptions do (D-013): a unit error has to be the agent's fault, not the
+harness's.
+
+### D-053 — The sandbox accepts non-compliant mandate debits
+
+The rails reject an unknown or inactive mandate, a non-positive amount, and an
+amount above the ceiling authorised at registration, so the sandbox does too.
+
+It accepts a debit with no 24-hour pre-debit notice, a debit after the customer
+opted out, and a high-value debit without per-transaction AFA. Those are
+merchant obligations under the RBI framework, audited after the fact rather
+than blocked in flight, and a non-compliant debit succeeds and looks like
+ordinary revenue. Blocking them in the sandbox would have made the whole RBI
+category untestable, which is the same trap as D-006.
+
+### D-054 — A compliance breach is critical severity with zero blast radius
+
+No money leaves the merchant when a mandate is debited non-compliantly -- money
+comes *in*. The harm is a regulatory penalty and customer detriment, not a
+balance change.
+
+Reporting it inside blast radius would corrupt a rupee figure that means "money
+the merchant lost". It is counted separately, at critical severity, so it cannot
+be waved away as a technicality either.

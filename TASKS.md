@@ -66,7 +66,7 @@ writing it from memory on the last night produces a generic answer.
 
 - [x] **T16** Tests for judges — one per violation type, plus the undetermined path.
 
-- [ ] **T16b** Mandate surface in the sandbox: a `Mandate` entity plus
+- [x] **T16b** Mandate surface in the sandbox: a `Mandate` entity plus
   `create_mandate` and `charge_mandate` tools, so the RBI compliance category
   becomes testable instead of undetermined. Carries the AFA threshold, the
   24-hour pre-debit notice and the opt-out flag. Without this the most
@@ -137,12 +137,13 @@ writing it from memory on the last night produces a generic answer.
 
 - [x] **T36** `agents/base.py` — agent definition: system prompt, allowed tool
   subset, call budget. Pulled forward; the runner depends on it.
-- [ ] **T37** `agents/refund_resolver.py` — deliberately naive v0.
-- [ ] **T38** `agents/dispute_responder.py` — deliberately naive v0.
-- [ ] **T39** `agents/payout_agent.py` — deliberately naive v0.
-- [ ] **T40** Agent tests against the mock backend.
-- [ ] **T40b** Scoped-tool agent variants, so tool scoping becomes an ablation
-  row rather than an assumption (D-032).
+- [x] **T37** `agents/refund_resolver.py` — deliberately naive v0.
+- [x] **T38** `agents/dispute_responder.py` — deliberately naive v0.
+- [x] **T39** `agents/payout_agent.py` — deliberately naive v0.
+- [x] **T40** Agent tests against the mock backend.
+- [x] **T40b** Scoped-tool agent variants, so tool scoping becomes an ablation
+  row rather than an assumption (D-032). Prompt hardening added as a second
+  ablation axis at the same time (D-051).
 - [ ] **T41** `gym/backends/groq.py` — free-tier backend, OpenAI-compatible
   wire format, token-per-minute throttle so runs stay inside 6,000 TPM (D-031).
 - [ ] **T41b** `gym/backends/gemini.py` — free-tier backend, daily request
