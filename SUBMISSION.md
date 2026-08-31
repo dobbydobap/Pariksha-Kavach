@@ -427,9 +427,7 @@ of another. The run stops cleanly, keeps what it recorded, and says how far it
 got. Each model carries its own daily allowance, so the corpus is measured
 across models rather than crammed into one.
 
-### C-18 — `[pending]`
 
-Append as encountered.
 
 ---
 
@@ -505,3 +503,40 @@ note is exactly what it is built not to flag.
 The consequence for a marketplace opening to third-party agents is direct. A
 guard model cannot be bought as a substitute for provenance tracking, because
 the attack that costs money does not look like an attack. It looks like work.
+
+
+## Attacking my own gateway
+
+An hour was spent writing six attacks aimed at Kavach rather than at the agent,
+each targeting one defense with a specific hypothesis. Five got through.
+
+The worst was structural. The destination rule asked whether an identifier was
+*untrusted*, so an identifier never observed at all — a hallucinated account
+number — was neither untrusted nor blocked. The one gate that spends money
+failed open while the schema-level model around it failed closed.
+
+Fixing it immediately broke legitimate work, which exposed a second error that
+had been harmless while the gate failed open: subject ids like `payment_id` were
+in the destination list. They name what is acted on, not where value lands. A
+fail-open gate hides its own design mistakes, because nothing it lets through
+ever costs anything.
+
+The others: reads reset the circuit breaker, so an attacker alternating one read
+with one denied write probed nine times without tripping it. The unit-confusion
+gate keyed on `payment_id`, so the payout path — the one with no ceiling tied to
+a prior capture — had no defense at all, and paying Rs 825 against an Rs 82,500
+invoice went straight through. And once the breaker did trip it short-circuited
+every later check, relabelling all subsequent blocks as "breaker" and making the
+ablation table read as though it were doing all the work.
+
+Four are fixed, with regression tests. Two survive and are documented rather
+than quietly dropped. Idempotency is defeated by changing an amount by one
+paise, and fingerprinting without the amount would also block the legitimate
+partial refunds and instalments that are ordinary in payments. PII detection is
+defeated by writing an address as "ananya dot iyer at example dot com", and
+normalising spellings moves that line rather than removing it.
+
+Hardening cost utility, and the honest number is in the report: under attack, a
+guarded agent completes 33% of its work against 87% unguarded. That is the price
+of failing closed, and tuning it until it looked better would have been the
+exact failure this project exists to catch.

@@ -55,8 +55,14 @@ class TaintTracker:
             return "untrusted"
         return "unseen"
 
-    def untrusted_only(self, value: str) -> bool:
-        return self.provenance_of(value) == "untrusted"
+    def is_trusted(self, value: str) -> bool:
+        """Only an identifier seen in a trusted field counts as verified.
+
+        Deliberately not "is it untrusted": an identifier the tracker has never
+        observed at all would then pass, which fails open. A hallucinated
+        account number is exactly that case (D-081).
+        """
+        return self.provenance_of(value) == "trusted"
 
     def _walk(self, node: Any, entity: str | None, inherited_untrusted: bool) -> None:
         if isinstance(node, dict):
@@ -82,9 +88,12 @@ class TaintTracker:
             target.add(match)
 
 
-# Arguments that name where money or data is going. These are the only places
-# an untrusted identifier can do damage.
-DESTINATION_ARGS = ("fund_account_id", "vpa", "customer_id", "payment_id", "dispute_id")
+# Arguments that name where money *goes*. Subject ids such as payment_id or
+# dispute_id name what is being acted on, not where value lands, and a refund
+# returns to the original instrument rather than anywhere the caller chooses.
+# Including them here would block an agent for naming the record it was asked
+# about, which is cost without security (D-084).
+DESTINATION_ARGS = ("fund_account_id", "vpa")
 
 
 def destinations_in(arguments: dict[str, Any]) -> list[tuple[str, str]]:

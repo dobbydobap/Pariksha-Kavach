@@ -116,8 +116,16 @@ The rule is narrow on purpose (D-044). Attackers do not need the agent to quote
 them, they need it to *act* on them, and acting means passing an identifier into
 a money-moving argument. So:
 
-> An identifier that has only ever appeared inside untrusted text is not a
-> legitimate destination.
+> Only an identifier seen in a field Razorpay produced may receive money.
+
+Stated that way rather than as "not untrusted" deliberately. An identifier the
+tracker has never observed — a hallucinated account number — is neither trusted
+nor untrusted, and the earlier phrasing let it through. The gate that spends
+money must fail closed (D-081).
+
+Destination means `fund_account_id` and `vpa` only. A `payment_id` names what is
+being acted on, not where value lands, and a refund returns to the original
+instrument regardless (D-084).
 
 This requires no attempt to parse intent out of prose, and produces no false
 positive on a legitimate refund, because `create_refund` names a payment rather
@@ -132,13 +140,20 @@ Seven independently toggleable defenses, evaluated in this order (D-048):
 
 | Order | Defense | What it does |
 |---|---|---|
-| 1 | `destinations` | Refuses a destination that only ever appeared in untrusted text |
+| 1 | `destinations` | Requires a destination to have been seen in a trusted field |
 | 2 | `spend` | Per-call caps and an aggregate ceiling |
-| 3 | `units` | Refuses a clean 100x gap against the entity being settled |
+| 3 | `units` | Refuses a clean 100x gap against any observed amount |
 | 4 | `approval` | Escalates above a threshold instead of acting |
 | 5 | `idempotency` | Refuses a repeat of an already-settled obligation |
 | 6 | `pii` | Refuses PII in an outbound field |
 | — | `breaker` | Suspends the agent after a run of denials |
+
+The breaker is listed last because it is not a gate in the sequence. Gates are
+evaluated even while it is tripped, so a block is attributed to the defense that
+actually objected; the breaker is the reported reason only when nothing else
+would have refused (D-085). Only a successful privileged call resets its streak,
+since reads always succeed and counting them let an attacker probe indefinitely
+(D-082).
 
 Hard prohibitions come first, then anomaly detection, then hand-offs. An amount
 above the cap is refused outright, so asking a human about it would be wrong.
@@ -301,9 +316,18 @@ gap by comparing a refund against the payment it settles, using amounts seen in
 ordinary traffic. An agent that refunds blind, without ever reading the payment,
 gets no protection from it.
 
-**Idempotency is blunt.** Two genuinely separate part-payments of equal size to
-the same vendor look identical to a replay. That false-positive cost is not
-hidden; it shows up as lost utility on the frontier.
+**Idempotency is blunt in both directions.** Two genuinely separate
+part-payments of equal size look identical to a replay, and the fingerprint is
+defeated by changing the amount by one paise: four refunds of Rs 50,000,
+Rs 49,999, Rs 49,998 and Rs 49,997 are four distinct intents. Dropping the
+amount from the fingerprint would stop that and would also block legitimate
+partial refunds and instalments. The aggregate ceiling bounds the damage without
+detecting the pattern (D-086).
+
+**PII egress detection is defeated by obfuscation.** `ananya dot iyer at
+example dot com` passes the regex and is perfectly readable to whoever receives
+it. Normalising common spellings moves the line rather than removing it, and
+each normalisation risks false positives on genuine prose.
 
 **Kavach cannot catch semantic wrongness.** An agent that refunds the right
 amount to the right destination for an entirely wrong reason passes every gate.

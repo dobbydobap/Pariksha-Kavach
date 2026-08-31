@@ -110,7 +110,7 @@ def test_identifiers_in_trusted_fields_are_trusted():
     t.observe(dispatch(sc.state, "fetch_invoice", {"invoice_id": sc.subject_invoice_id}))
 
     assert t.provenance_of(VENDOR) == "trusted"
-    assert not t.untrusted_only(VENDOR)
+    assert t.is_trusted(VENDOR)
 
 
 def test_identifiers_that_only_appear_in_untrusted_text_are_untrusted():
@@ -121,7 +121,7 @@ def test_identifiers_that_only_appear_in_untrusted_text_are_untrusted():
     t = TaintTracker()
     t.observe(dispatch(sc.state, "fetch_invoice", {"invoice_id": sc.subject_invoice_id}))
 
-    assert t.untrusted_only(ATTACKER)
+    assert not t.is_trusted(ATTACKER)
     assert t.provenance_of(VENDOR) == "trusted"
 
 
@@ -142,7 +142,8 @@ def test_injected_account_in_a_support_thread_is_untrusted():
     sc = apply(build(REFUND), ATTACKS_BY_ID["inj.system_notice.blatant"])
     t = TaintTracker()
     t.observe(dispatch(sc.state, "fetch_support_thread", {"payment_id": sc.subject_payment_id}))
-    assert t.untrusted_only(ATTACKER)
+    assert t.provenance_of(ATTACKER) == "untrusted"
+    assert not t.is_trusted(ATTACKER)
 
 
 # ---------------------------------------------------------------------------
@@ -436,3 +437,54 @@ def test_legitimate_work_still_completes_under_the_default_policy():
     assert not any(c.blocked for c in t.calls)
     assert t.money_out_paise == 82_500_00
     assert judge(t, build(PAYOUT)).task_completed
+
+
+# ---------------------------------------------------------------------------
+# Hardening found by hand-attacking the gateway (T56)
+# ---------------------------------------------------------------------------
+
+
+def test_an_unseen_destination_is_refused_not_allowed():
+    """Fail closed. A hallucinated account is 'unseen', not 'untrusted', and an
+    earlier version let it straight through (D-081)."""
+    k = Kavach(default_policy())
+    decision = k.check("create_payout", {"fund_account_id": "fa_neverSeen99", "amount": 100})
+    assert not decision.allow
+    assert decision.defense == "destinations"
+
+
+def test_a_subject_id_is_not_treated_as_a_destination():
+    """payment_id names what is acted on, not where money lands. Requiring it to
+    be trusted is cost without security (D-084)."""
+    from pariksha.kavach.taint import DESTINATION_ARGS
+
+    assert "payment_id" not in DESTINATION_ARGS
+    assert "dispute_id" not in DESTINATION_ARGS
+    assert set(DESTINATION_ARGS) == {"fund_account_id", "vpa"}
+
+
+def test_reads_do_not_reset_the_breaker():
+    """Otherwise one read per probe buys unlimited probes (D-082)."""
+    k = Kavach(default_policy())
+    for _ in range(3):
+        k.check("create_payout", {"fund_account_id": "fa_unknown", "amount": 100})
+        k.check("fetch_payment", {"payment_id": "pay_x"})
+    assert k.breaker.tripped
+
+
+def test_unit_confusion_is_caught_on_a_payout_with_no_payment_reference():
+    """The units gate keyed on payment_id, which a payout does not carry (D-083)."""
+    sc = build(PAYOUT)
+    k = Kavach(default_policy())
+    k.observe(dispatch(sc.state, "fetch_invoice", {"invoice_id": sc.subject_invoice_id}))
+    decision = k.check("create_payout", {"fund_account_id": VENDOR, "amount": 82_500})
+    assert not decision.allow
+    assert decision.defense == "units"
+
+
+def test_a_correct_payout_against_an_observed_invoice_still_passes():
+    """The fallback must not block the legitimate amount it is protecting."""
+    sc = build(PAYOUT)
+    k = Kavach(default_policy().without("approval"))
+    k.observe(dispatch(sc.state, "fetch_invoice", {"invoice_id": sc.subject_invoice_id}))
+    assert k.check("create_payout", {"fund_account_id": VENDOR, "amount": 82_500_00}).allow

@@ -226,7 +226,8 @@ writing it from memory on the last night produces a generic answer.
   2:30 scorecard, frontier, ablation, blast radius · 4:00 what running this
   against real Agent Studio submissions would take.
 - [ ] **T55** Record the 5-minute video. Re-record until it is tight.
-- [ ] **T56** Manual adversarial hour: try to defeat Kavach by hand. Anything
+- [x] **T56** Manual adversarial hour. 6 attacks on the gateway, 5 got
+  through, 4 fixed with regression tests, 2 documented as limits. Original: try to defeat Kavach by hand. Anything
   that works becomes a corpus entry and goes in the limitations section.
 - [ ] **T57** Final pass — clean history, verify one-command repro on a fresh
   clone, confirm every number in the README regenerates.

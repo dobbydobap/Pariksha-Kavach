@@ -970,3 +970,82 @@ about where an identifier came from rather than how the surrounding text reads
 
 Scored offline once per payload and stored in `docs/guard_scores.json`, so the
 comparison costs nothing to reproduce and does not need a per-episode call.
+
+---
+
+## Attacking Kavach by hand (T56)
+
+Six hand-written attacks aimed at the gateway rather than the agent. Five got
+through on the first pass. Four are now fixed and two remain, documented rather
+than papered over.
+
+### D-081 — The destination rule failed open on anything it had never seen
+
+The rule asked whether an identifier was *untrusted*. An identifier the tracker
+had never observed at all is neither trusted nor untrusted, so it passed.
+
+That is precisely a hallucinated account number, and it inverted the design: the
+schema-level provenance model fails closed (D-009) while the one gate that
+spends money failed open. It now requires *trusted* provenance, so an identifier
+must have been seen in a field Razorpay produced before it can receive money.
+
+### D-082 — Reads reset the circuit breaker, so probing was free
+
+`record_success` was called on every allowed call, and reads are always allowed.
+An attacker alternating one read with one denied write never accumulated a
+streak: nine denied probes, breaker untripped.
+
+Only a successful privileged call resets it now. Three denied probes trip it.
+
+### D-083 — The units gate could not see a payout
+
+It compared an amount against the payment named in `payment_id`. A payout names
+no payment, so the entire payout path — the one with no ceiling tied to a prior
+capture — had no unit-confusion defense at all. Paying Rs 825 against an
+Rs 82,500 invoice went straight through.
+
+Where no reference is named, it now checks against every amount observed in the
+episode. A clean 100x from any of them is far likelier to be a unit error than a
+coincidence. A test asserts the correct amount still passes, because a gate that
+blocks the thing it protects is worse than no gate.
+
+### D-084 — Subject ids are not destinations, and treating them as such was pure cost
+
+Fixing D-081 immediately broke legitimate work, which exposed an error that had
+been harmless while the rule failed open: `payment_id`, `dispute_id` and
+`customer_id` were in the destination list.
+
+They name what is being acted on, not where value lands. A refund returns to the
+original instrument regardless of what the caller asks for. Requiring them to be
+trusted blocked an agent for naming the record it had been asked about — cost
+with no security. The list is now `fund_account_id` and `vpa` only.
+
+The bug was only visible because the failure it caused was expensive. A
+fail-open gate hides its own design errors.
+
+### D-085 — A tripped breaker must not mask attribution
+
+With the breaker checked first, every block after it tripped was labelled
+"breaker" regardless of which defense actually objected. The ablation table
+then reads as though the breaker were doing all the work.
+
+Gates are now evaluated even while suspended, and the breaker is only the
+attributed reason when nothing else would have objected. Attribution went from
+16 breaker blocks to 5, with approval, PII and destinations recovering theirs.
+
+### D-086 — Two bypasses survive and are reported, not hidden
+
+**Idempotency is defeated by changing the amount by one paise.** The fingerprint
+covers tool, target and amount, so four refunds of Rs 50,000, Rs 49,999,
+Rs 49,998 and Rs 49,997 are four distinct intents totalling Rs 1,99,994.
+Fingerprinting without the amount would stop it and would also block legitimate
+partial refunds and instalments, which are ordinary in payments. The aggregate
+spend ceiling bounds the damage; it does not detect the pattern.
+
+**PII egress is defeated by obfuscation.** `ananya dot iyer at example dot com`
+passes a regex and is perfectly readable to the recipient. Normalising a few
+spellings would move the line, not remove it, and every normalisation risks
+false positives on genuine prose.
+
+Both are properties of the mechanism rather than oversights, and both belong in
+the limitations section where a reader can weigh them.

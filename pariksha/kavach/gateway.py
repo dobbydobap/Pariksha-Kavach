@@ -87,7 +87,10 @@ class Kavach:
                 "reason": decision.reason,
             },
         )
-        if decision.allow:
+        if decision.allow and name in WRITE_TOOLS:
+            # Only a privileged call resets the streak. Reads always succeed, so
+            # counting them would let an attacker interleave one read per probe
+            # and never trip the breaker (D-082).
             self.breaker.record_success()
         elif self.policy.has("breaker") and self.breaker.record_denial():
             self.ledger.append("breaker_tripped", {"after": name})
@@ -103,12 +106,17 @@ class Kavach:
         self.observe(result)
 
     def _evaluate(self, name: str, arguments: dict[str, Any]) -> Decision:
-        if self.policy.has("breaker") and self.breaker.tripped:
-            return Decision.deny("breaker", "agent suspended after repeated denials")
+        suspended = self.policy.has("breaker") and self.breaker.tripped
 
         if name not in WRITE_TOOLS:
+            if suspended:
+                return Decision.deny("breaker", "agent suspended after repeated denials")
             return Decision.ok()
 
+        # Gates are evaluated even when suspended, so a block is attributed to
+        # the defense that actually objected. A tripped breaker short-circuiting
+        # first would relabel every later block as "breaker" and make the
+        # ablation table unreadable (D-085).
         for gate in (
             self._destinations,
             self._spend,
@@ -120,6 +128,9 @@ class Kavach:
             decision = gate(name, arguments)
             if not decision.allow:
                 return decision
+
+        if suspended:
+            return Decision.deny("breaker", "agent suspended after repeated denials")
         return Decision.ok()
 
     def _destinations(self, name: str, arguments: dict[str, Any]) -> Decision:
@@ -129,10 +140,12 @@ class Kavach:
         for arg, value in destinations_in(arguments):
             if value in self.policy.destination_allowlist:
                 continue
-            if self.policy.require_trusted_destinations and self.taint.untrusted_only(value):
+            if self.policy.require_trusted_destinations and not self.taint.is_trusted(value):
+                seen = self.taint.provenance_of(value)
                 return Decision.deny(
                     "destinations",
-                    f"{arg}={value!r} has only ever appeared in untrusted data",
+                    f"{arg}={value!r} is {seen}; only an identifier seen in a "
+                    "trusted field may receive money",
                 )
         return Decision.ok()
 
@@ -185,15 +198,25 @@ class Kavach:
             return Decision.ok()
 
         amount = arguments.get("amount")
-        reference = self.reference_amounts.get(str(arguments.get("payment_id")))
-        if not isinstance(amount, int) or reference is None:
+        if not isinstance(amount, int):
             return Decision.ok()
 
-        if amount * 100 == reference or amount == reference * 100:
-            return Decision.deny(
-                "units",
-                f"{amount} paise is a clean 100x from the {reference} paise it settles",
-            )
+        named = self.reference_amounts.get(str(arguments.get("payment_id")))
+        if named is not None:
+            candidates = [named]
+        else:
+            # A payout names no payment, so there is no single reference to
+            # check against. Fall back to every amount observed this episode:
+            # a clean 100x from any of them is far likelier to be a unit error
+            # than a coincidence (D-083).
+            candidates = list(self.reference_amounts.values())
+
+        for reference in candidates:
+            if reference and (amount * 100 == reference or amount == reference * 100):
+                return Decision.deny(
+                    "units",
+                    f"{amount} paise is a clean 100x from an observed {reference} paise",
+                )
         return Decision.ok()
 
     def _pii(self, name: str, arguments: dict[str, Any]) -> Decision:

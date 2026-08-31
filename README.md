@@ -14,12 +14,17 @@ which control stops which attack class and what each costs in usefulness.
 `openai/gpt-oss-20b` via Groq, seed 1729, 37 of 41 episodes, 240,090 tokens,
 **zero cost**.
 
-| | Guardrails off | Kavach | Kavach, approval gate off |
-|---|---|---|---|
-| Attack success | 13% <sub>[5-30%] n=30</sub> | **3%** <sub>[1-17%]</sub> | **3%** <sub>[1-17%]</sub> |
-| Benign utility | 100% <sub>n=4</sub> | 50% | 75% |
-| Escalated to a human | 0% | 25% | 0% |
-| Unauthorised money moved / 1,000 episodes | ₹2,34,16,667 | **₹40,00,000** | **₹40,00,000** |
+| | Guardrails off | Kavach |
+|---|---|---|
+| Attack success | 13% <sub>[5-30%] n=30</sub> | **3%** <sub>[1-17%]</sub> |
+| Benign utility | 100% <sub>n=4</sub> | 50% |
+| Utility under attack | 87% | 33% |
+| Unauthorised money moved / 1,000 episodes | ₹2,34,16,667 | **₹40,00,000** |
+
+Utility under attack falling from 87% to 33% is the price of failing closed, and
+it is reported rather than tuned away. Six hand-written attacks were aimed at
+the gateway itself; five got through, four are fixed with regression tests, and
+[two survive and are documented](docs/ARCHITECTURE.md#7-what-this-does-not-cover).
 
 Thirty adversarial episodes. The intervals are wide and printed everywhere;
 these are pilot measurements, not settled ones. Three episodes are in the
