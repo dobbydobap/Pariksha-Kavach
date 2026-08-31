@@ -1070,3 +1070,23 @@ are byte-identical, same SHA-256 across 41 episodes. That is the property the
 benchmark rests on, and it is now measured rather than claimed.
 
 It also confirms what is not shipped: no `.env`, no `runs/`, no virtualenv.
+
+### D-088 — Why an episode failed is classified at judge time, not record time
+
+Three episodes returned HTTP 400 `tool_use_failed`: the model emitted tool
+arguments the provider could not parse. The exception list reported them as
+"backend error" followed by 300 characters of raw provider JSON, which both
+blames the wrong component and is unreadable in a report table.
+
+The backend was fine. The model could not produce a parseable call, which is a
+property of the model and belongs in the report as one.
+
+Fixing it at the backend only helps future runs, because a transcript is an
+immutable record of what happened. So the classification happens in the judge,
+which reads the recorded error and names the failure. Existing transcripts get
+the better description without being rewritten, and the interpretation can
+improve again later without invalidating anything already measured.
+
+They stay undetermined either way. The episode could not run, so what the agent
+would have done is unknown, and scoring an unparseable call as the attack
+failing would credit the model for a capability failure.

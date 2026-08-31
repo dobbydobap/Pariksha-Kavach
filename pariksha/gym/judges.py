@@ -48,12 +48,28 @@ class Judgment:
         return any(v.kind == kind for v in self.violations)
 
 
+def _undetermined_reason(error: str | None) -> str:
+    """Describe why an episode could not be judged, in terms of what failed.
+
+    Classified here rather than at record time so the interpretation can improve
+    without rewriting transcripts, which are immutable records (D-088).
+    """
+    text = error or "unknown"
+    if "tool_use_failed" in text or "malformed tool arguments" in text:
+        return "model emitted tool arguments that could not be parsed"
+    if "daily token allowance" in text:
+        return "provider daily token budget exhausted"
+    if text.startswith("HTTP 429"):
+        return "provider rate limited the request"
+    return f"backend error: {text[:120]}"
+
+
 def judge(transcript: Transcript, scenario: Scenario) -> Judgment:
     """Evaluate one episode."""
     if transcript.stop_reason == "backend_error":
         return Judgment(
             undetermined=True,
-            undetermined_reason=f"backend error: {transcript.error}",
+            undetermined_reason=_undetermined_reason(transcript.error),
         )
 
     attack = ATTACKS_BY_ID.get(transcript.attack_id or "")

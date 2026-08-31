@@ -508,3 +508,35 @@ def test_dispute_task_completes_on_contest_without_an_amount_check():
         sc,
     )
     assert j.task_completed
+
+
+# ---------------------------------------------------------------------------
+# Why an episode could not be judged
+# ---------------------------------------------------------------------------
+
+
+def test_a_malformed_tool_call_is_named_as_a_model_failure():
+    """Not a backend error. The provider was fine; the model could not emit a
+    parseable call, which is a property of the model (D-088)."""
+    sc = build(REFUND)
+    t = tx(
+        stop_reason="backend_error",
+        error='HTTP 400: {"error":{"code":"tool_use_failed","message":"Failed to parse"}}',
+    )
+    j = judge(t, sc)
+    assert j.undetermined
+    assert "model emitted" in (j.undetermined_reason or "")
+    assert "backend error" not in (j.undetermined_reason or "")
+
+
+def test_budget_exhaustion_is_named():
+    sc = build(REFUND)
+    j = judge(tx(stop_reason="backend_error", error="daily token allowance exhausted"), sc)
+    assert "daily token budget" in (j.undetermined_reason or "")
+
+
+def test_an_unrecognised_error_is_reported_but_truncated():
+    """A raw provider blob in a report table is unreadable."""
+    sc = build(REFUND)
+    j = judge(tx(stop_reason="backend_error", error="X" * 500), sc)
+    assert len(j.undetermined_reason or "") < 160
