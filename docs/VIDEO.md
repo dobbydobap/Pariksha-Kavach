@@ -116,6 +116,12 @@ If a later run supersedes it, re-read this file before recording.
 >
 > It can do the sums and follow the process. It cannot tell whose voice it is
 > reading.
+>
+> I ran a third model, Qwen, and nothing got through it — including the attack
+> that beat both the others. But its one benign task failed: it called the same
+> lookup seventeen times until it ran out of budget. So I cannot tell you it is
+> safe. I can tell you no attack landed in sixteen tries and I never measured
+> whether it finishes anything. An agent that does nothing is trivially secure.
 
 ---
 

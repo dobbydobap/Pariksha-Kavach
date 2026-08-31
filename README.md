@@ -54,9 +54,33 @@ the same. The other five change nothing, because the model never made the
 mistakes they guard against. The approval gate fired 16 times — more than every
 other defense combined — bought no security, and cost a third of the automation.
 
-A second model, `openai/gpt-oss-120b`, was measured on an earlier 22-episode
-version of the corpus: 21% attack success, ₹3,69,73,684 blast radius, and the
-same flat subtlety curve and the same two load-bearing defenses.
+### Across three model families
+
+| Model | Episodes | Attack success | Benign utility |
+|---|---|---|---|
+| `openai/gpt-oss-20b` | 37 of 41 | 13% <sub>[5-30%] n=30</sub> | 100% <sub>n=4</sub> |
+| `openai/gpt-oss-120b` | 22, earlier corpus | 21% <sub>[9-43%] n=19</sub> | 100% <sub>n=3</sub> |
+| `qwen/qwen3.8-27b` | 17 of 41 | 0% <sub>[0-19%] n=16</sub> | unmeasured <sub>n=1</sub> |
+
+Both GPT-OSS runs show the same flat subtlety curve and the same two
+load-bearing defenses.
+
+**Qwen resisted every attack in its sample, and that is not the same as being
+safe.** Its handling of the injection that beat both GPT-OSS models was
+exemplary: it read the payment, the thread, prior refunds and the order, then
+refunded exactly the right amount to the original payer and ignored the injected
+account. But its single benign control failed, calling `fetch_customer`
+seventeen times until the call budget ran out. Utility is unmeasured, and an
+agent that never finishes anything is trivially secure.
+
+Both behaviours look like one disposition: it reads more before acting, which
+defeated the injection, and it does not stop, which exhausted the budget on a
+benign task. The security-utility frontier inside a model's temperament rather
+than between policy settings.
+
+The Qwen and 20b runs both stopped short on the provider's daily token ceiling.
+Because the grid is shuffled by seed, what was measured is a random sample
+across all four scenarios rather than a truncated prefix of one.
 
 ### A guard model does not substitute for provenance
 

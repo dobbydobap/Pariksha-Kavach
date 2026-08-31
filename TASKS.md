@@ -161,7 +161,9 @@ writing it from memory on the last night produces a generic answer.
 - [x] **T44** First real baseline run, guardrails off, on `openai/gpt-oss-120b`
   via Groq. **The pivot point** — this is where the project acquires
   a result.
-- [ ] **T44b** Cross-family sweep: `openai/gpt-oss-20b` and `qwen/qwen3.8-27b`
+- [x] **T44b** Cross-family sweep: `qwen/qwen3.8-27b`, 17 of 41 episodes,
+  0 of 16 attacks landed, utility unmeasured on one benign control (D-089).
+  Original: `openai/gpt-oss-20b` and `qwen/qwen3.8-27b`
   against the `gpt-oss-120b` baseline, batched against the TPM cap. Model ids
   confirmed against the live catalogue, not the docs (D-059).
 
