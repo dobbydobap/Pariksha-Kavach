@@ -149,7 +149,7 @@ writing it from memory on the last night produces a generic answer.
 - [ ] **T41b** `gym/backends/gemini.py` — deferred. Gemini's current API is a
   stateful `/v1beta/interactions` endpoint with `previous_interaction_id`,
   which does not fit the stateless replay design without work. Groq already
-  covers three model families from one key, so this is enrichment rather
+  covers two model families from one key, so this is enrichment rather
   than a blocker (D-055).
 - [ ] **T41c** `gym/backends/anthropic.py` — written but unfunded. Prompt caching
   and the non-zero cache-read assert (D-025). Kept so the Claude column runs
@@ -158,14 +158,14 @@ writing it from memory on the last night produces a generic answer.
   with `--seed`, `--model`, `--backend`, `--max-spend`.
 - [x] **T43** Full dry run end to end via `pariksha rehearse`. Zero spend, no
   key, runs in CI. Surfaced and fixed the escaped-JSON parsing bug.
-- [x] **T44** First real baseline run, guardrails off, on Gemini 2.5 Flash-Lite
-  (fastest free path). **The pivot point** — this is where the project acquires
+- [x] **T44** First real baseline run, guardrails off, on `openai/gpt-oss-120b`
+  via Groq. **The pivot point** — this is where the project acquires
   a result.
 - [ ] **T44b** Cross-family sweep: `openai/gpt-oss-20b` and `qwen/qwen3.8-27b`
   against the `gpt-oss-120b` baseline, batched against the TPM cap. Model ids
   confirmed against the live catalogue, not the docs (D-059).
 
-- [ ] **T44c** Guard-model defense: `meta-llama/llama-prompt-guard-2-86m` is a
+- [x] **T44c** Guard-model comparison: `meta-llama/llama-prompt-guard-2-86m` is a
   dedicated prompt-injection classifier, free on the same Groq key. Add it as a
   Kavach defense and an ablation row. The question worth answering is whether a
   purpose-built classifier beats provenance tracking, and what it costs in
@@ -187,7 +187,9 @@ writing it from memory on the last night produces a generic answer.
   protect (D-063).
 - [x] **T47** Coverage tests. Caught a single-subtlety category and an
   invented category name on first run.
-- [~] **T48** Re-run the baseline on the expanded corpus.
+- [x] **T48** Re-ran on the expanded corpus: 37 of 41 episodes on
+  `openai/gpt-oss-20b`, stopped cleanly on the daily token ceiling. Both
+  headline findings replicated.
 
   ```
   git add -A && git commit -m "Expand corpus to 8 scenarios and 60 attacks" && git push
@@ -205,7 +207,7 @@ writing it from memory on the last night produces a generic answer.
   rather than a bound (D-062).
 - [ ] **T51** MCP proxy server exposing Kavach over MCP, with a worked example of
   an external agent pointing at it unchanged (D-027).
-- [ ] **T52** `docs/ARCHITECTURE.md` — data flow, taint model, policy grammar,
+- [x] **T52** `docs/ARCHITECTURE.md` — data flow, taint model, policy grammar,
   threat model, and an explicit limitations section.
 - [x] **T53** README rewrite with the real headline numbers, one-command repro,
   and a screenshot of a live test-mode payment if Razorpay keys are available.
@@ -218,7 +220,8 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 6 — Submission
 
-- [ ] **T54** Video script, then rehearse aloud. Structure: 0:00 the seam ·
+- [x] **T54** Video script drafted in `docs/VIDEO.md`; numbers filled and
+  rehearsed once the final run lands.  Original brief: Structure: 0:00 the seam ·
   0:30 the attack landing live · 1:30 the same attack bouncing off Kavach ·
   2:30 scorecard, frontier, ablation, blast radius · 4:00 what running this
   against real Agent Studio submissions would take.

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
+from pariksha.gym.backends.groq import DailyBudgetExhausted
 from pariksha.gym.grid import VARIANTS, build_grid
 from pariksha.gym.runner import run_episode
 from pariksha.gym.score import Scorecard, score
@@ -93,7 +94,7 @@ def bench(
     limit: int = typer.Option(0, help="Stop after N episodes. 0 runs the whole grid."),
 ) -> None:
     """Run the benchmark and write transcripts under runs/."""
-    episodes = build_grid(variant)
+    episodes = build_grid(variant, seed=seed)
     if limit:
         episodes = episodes[:limit]
 
@@ -104,15 +105,23 @@ def bench(
 
     console.print(f"[bold]{len(episodes)}[/bold] episodes -> runs/{run}\n")
     transcripts = []
+    stopped = None
 
     with console.status("") as status:
         for i, episode in enumerate(episodes, 1):
             status.update(f"[{i}/{len(episodes)}] {episode.label}")
             scenario = build(episode.scenario_key, seed=seed)
             kavach = Kavach(guard) if guard.enabled else None
-            t = run_episode(scenario, episode.agent, driver, episode.attack, kavach)
+            try:
+                t = run_episode(scenario, episode.agent, driver, episode.attack, kavach)
+            except DailyBudgetExhausted as e:
+                stopped = f"{e}  Stopped after {i - 1} of {len(episodes)} episodes."
+                break
             writer.write(t)
             transcripts.append(t)
+
+    if stopped:
+        console.print(f"[yellow]budget[/yellow] {stopped}\n")
 
     card = score(transcripts)
     render(card, f"{backend}/{model}  policy={guard.name}  variant={variant}")

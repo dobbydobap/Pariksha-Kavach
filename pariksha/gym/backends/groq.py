@@ -4,16 +4,17 @@ Groq speaks the OpenAI chat-completions shape, so this is mostly translation
 from the internal content-block format (D-039). Raw httpx rather than an SDK:
 one endpoint, one request shape, and no dependency added for it.
 
-The binding constraint is tokens per minute, not requests per day. Without
-prompt caching the whole prompt is billed every turn, so pacing is what keeps a
-long run alive. The ceiling and the remaining budget come from the provider's
-own response headers rather than a client-side guess (D-061).
+Two ceilings bind, and only one is visible in the response headers. Tokens per
+minute is reported and paced against (D-061). Tokens per *day* is reported
+nowhere except the body of the 429 that enforces it, and at roughly 7,400 tokens
+an episode it is the ceiling that actually decides how much can be run (D-074).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -97,6 +98,18 @@ def to_openai_messages(system: str, messages: list[Message]) -> list[dict[str, A
     return out
 
 
+DAILY_LIMIT = re.compile(r"tokens per day \(TPD\): Limit (\d+), Used (\d+)", re.IGNORECASE)
+
+
+class DailyBudgetExhausted(RuntimeError):
+    """The per-model daily token allowance is gone.
+
+    Distinct from a transient 429: waiting does not help on any useful
+    timescale, so the run must stop and say so rather than sleep in a loop
+    (D-074).
+    """
+
+
 @dataclass
 class GroqBackend:
     model: str = "openai/gpt-oss-120b"
@@ -104,7 +117,7 @@ class GroqBackend:
     api_key: str = field(default_factory=lambda: os.environ.get("GROQ_API_KEY", ""))
     temperature: float = 0.0
     max_tokens: int = 900
-    timeout: float = 120.0
+    timeout: float = 45.0
     limit: RateLimit = field(default_factory=RateLimit)
     max_retries: int = 4
     _observed_output: int = field(default=250, init=False)
@@ -172,7 +185,13 @@ class GroqBackend:
         )
 
     def _post(self, body: dict[str, Any]) -> dict[str, Any] | Completion:
-        """POST with backoff on rate limits. Returns a Completion on give-up."""
+        """POST with backoff on rate limits. Returns a Completion on give-up.
+
+        The timeout is deliberately tight. A completion here normally takes a
+        few seconds, so a long ceiling does not rescue a slow call, it just
+        multiplies a hung one by the retry count and stalls the whole run
+        (D-073).
+        """
         headers = {"Authorization": f"Bearer {self.api_key}"}
         last = ""
 
@@ -189,9 +208,29 @@ class GroqBackend:
             if response.status_code == 200:
                 return response.json()
 
+            if response.status_code == 400 and "tool_use_failed" in response.text:
+                # The model emitted tool arguments the provider could not parse.
+                # A model quality signal, not an infrastructure failure, and it
+                # is labelled as such in the exception list (D-077).
+                return Completion(
+                    stop_reason="error",
+                    error="model emitted malformed tool arguments (tool_use_failed)",
+                )
+
             last = f"HTTP {response.status_code}: {response.text[:200]}"
+
             if response.status_code == 429:
-                time.sleep(float(response.headers.get("retry-after", 2**attempt)))
+                daily = DAILY_LIMIT.search(response.text)
+                if daily:
+                    limit, used = (int(g) for g in daily.groups())
+                    raise DailyBudgetExhausted(
+                        f"{self.model}: daily token allowance exhausted "
+                        f"({used:,} of {limit:,}). Retrying will not help today. "
+                        f"Switch model with --model, or resume tomorrow."
+                    )
+                if response.headers.get("x-should-retry") == "false":
+                    break
+                time.sleep(min(float(response.headers.get("retry-after", 2**attempt)), 30.0))
                 continue
             if response.status_code >= 500:
                 time.sleep(2**attempt)
