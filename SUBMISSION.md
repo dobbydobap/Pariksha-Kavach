@@ -285,7 +285,29 @@ separately at critical severity.
 One injected sentence now produces two distinct violations, each traceable to a
 specific clause of the framework dated 21 April 2026.
 
-### C-12 — `[pending]`
+### C-12 — A dry run needs something to run on
+
+The whole pipeline was built against a scripted mock backend so nothing had to
+be paid for while the machinery was wrong. That backend is scripted per episode,
+though, which meant it could not drive a full grid: the zero-cost end-to-end dry
+run had nothing to execute.
+
+A small reactive backend now reads ids out of the task and fields out of tool
+results and drives each scenario to completion, so the whole 22-episode grid,
+the scoring, the gateway and the replay ablation all run in CI with no API key.
+
+It immediately earned itself: it failed on two of three scenarios because tool
+results arrive as JSON-encoded strings, so field names inside them are escaped a
+second time and the parsing missed every amount. That would have surfaced later
+against a paid model instead.
+
+The care needed was in how it is presented. It has no language understanding, so
+it scores 0% attack success on every category, and those zeroes look like a
+perfect result if lifted out of context. The command prints a banner stating the
+numbers are not findings. A benchmark whose own dry-run output could be mistaken
+for a result is a benchmark that will eventually mislead someone.
+
+### C-13 — `[pending]`
 
 Append as encountered.
 

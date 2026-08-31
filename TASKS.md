@@ -144,17 +144,20 @@ writing it from memory on the last night produces a generic answer.
 - [x] **T40b** Scoped-tool agent variants, so tool scoping becomes an ablation
   row rather than an assumption (D-032). Prompt hardening added as a second
   ablation axis at the same time (D-051).
-- [ ] **T41** `gym/backends/groq.py` — free-tier backend, OpenAI-compatible
+- [x] **T41** `gym/backends/groq.py` — free-tier backend, OpenAI-compatible
   wire format, token-per-minute throttle so runs stay inside 6,000 TPM (D-031).
-- [ ] **T41b** `gym/backends/gemini.py` — free-tier backend, daily request
-  budget tracking.
+- [ ] **T41b** `gym/backends/gemini.py` — deferred. Gemini's current API is a
+  stateful `/v1beta/interactions` endpoint with `previous_interaction_id`,
+  which does not fit the stateless replay design without work. Groq already
+  covers three model families from one key, so this is enrichment rather
+  than a blocker (D-055).
 - [ ] **T41c** `gym/backends/anthropic.py` — written but unfunded. Prompt caching
   and the non-zero cache-read assert (D-025). Kept so the Claude column runs
   unchanged the day it is funded.
-- [ ] **T42** `cli/main.py` — `pariksha bench`, `pariksha score`, `pariksha cost`,
+- [x] **T42** `cli/main.py` — `pariksha bench`, `pariksha score`, `pariksha cost`,
   with `--seed`, `--model`, `--backend`, `--max-spend`.
-- [ ] **T43** Full dry run on the mock backend end to end. Zero spend. Fix
-  everything this surfaces before spending a rupee of credit.
+- [x] **T43** Full dry run end to end via `pariksha rehearse`. Zero spend, no
+  key, runs in CI. Surfaced and fixed the escaped-JSON parsing bug.
 - [ ] **T44** First real baseline run, guardrails off, on Gemini 2.5 Flash-Lite
   (fastest free path). **The pivot point** — this is where the project acquires
   a result.

@@ -579,3 +579,50 @@ balance change.
 Reporting it inside blast radius would corrupt a rupee figure that means "money
 the merchant lost". It is counted separately, at critical severity, so it cannot
 be waved away as a technicality either.
+
+---
+
+## Backends and the command line
+
+### D-055 — Groq first, Gemini deferred
+
+Groq speaks the OpenAI chat-completions shape, so the backend is translation
+over one endpoint and needs no new dependency. One key covers Llama 3.3 70B,
+Qwen 3 and Kimi K2, which is already three model families.
+
+Gemini's current API is a stateful `/v1beta/interactions` endpoint carrying
+`previous_interaction_id` between turns. That does not fit a design built around
+stateless, replayable episodes without real work, and it buys a fourth family
+rather than unblocking anything. Deferred rather than rushed.
+
+### D-056 — The throttle paces on tokens, not requests
+
+Groq's free tier allows 14,400 requests a day but only 6,000 tokens a minute,
+and the whole prompt is billed every turn with no caching (D-033). An eight-turn
+episode costs roughly 51k cumulative tokens, so the token ceiling binds long
+before the request ceiling.
+
+`TokenThrottle` sleeps before sending a request that would breach the rolling
+minute, which is cheaper than being rejected after sending it. A single request
+larger than the whole window proceeds rather than deadlocking, since refusing it
+would stall the run permanently.
+
+### D-057 — A rehearsal backend, clearly labelled as not a finding
+
+The mock backend is scripted per episode, so it cannot drive a whole grid, which
+left the zero-cost dry run with nothing to run on.
+
+`RehearsalBackend` reads ids out of the task and fields out of tool results and
+drives each scenario to completion. It makes the full pipeline runnable in CI
+with no API key at all, which is what lets a reviewer verify the machinery
+independently of any model result.
+
+It has no language understanding, so it neither falls for nor resists an
+injection: it scores 0% attack success on everything. The CLI prints a banner
+saying so. A number that cannot be misread is worth more than one that flatters.
+
+### D-058 — Strictness has to survive translation
+
+`additionalProperties: false` is what makes a malformed tool call
+unrepresentable (D-014). Translating to another provider's schema format is an
+easy place to drop it silently, so a test asserts it survives for every tool.
