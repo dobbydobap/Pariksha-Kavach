@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import typer
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
@@ -18,6 +19,9 @@ from pariksha.kavach.policy import DEFENSES, Policy, default_policy
 from pariksha.kavach.replay import fidelity_summary, replay_matrix
 from pariksha.sandbox.money import format_inr
 from pariksha.sandbox.seed import build
+
+# Keys live in .env; backends read them from the environment.
+load_dotenv()
 
 app = typer.Typer(add_completion=False, help="An exam for money-moving AI agents.")
 console = Console()
@@ -82,7 +86,7 @@ def render(card: Scorecard, title: str) -> None:
 def bench(
     seed: int = typer.Option(1729, help="Reproduces the whole run."),
     backend: str = typer.Option("groq", help="Model backend."),
-    model: str = typer.Option("llama-3.3-70b-versatile", help="Model id."),
+    model: str = typer.Option("openai/gpt-oss-120b", help="Model id."),
     policy: str = typer.Option("off", help="off, default, no-<defense>, only-<defense>."),
     variant: str = typer.Option("base", help=f"Agent variant: {', '.join(VARIANTS)}."),
     limit: int = typer.Option(0, help="Stop after N episodes. 0 runs the whole grid."),

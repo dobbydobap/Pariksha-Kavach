@@ -104,7 +104,7 @@ def test_unknown_backends_are_rejected():
 def test_groq_without_a_key_fails_with_guidance(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     with pytest.raises(RuntimeError, match="console.groq.com"):
-        make_backend("groq", "llama-3.3-70b-versatile")
+        make_backend("groq", "openai/gpt-oss-120b")
 
 
 # ---------------------------------------------------------------------------

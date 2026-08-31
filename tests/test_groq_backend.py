@@ -161,5 +161,5 @@ def test_an_unknown_model_is_rejected_before_any_request(monkeypatch):
 
 def test_the_backend_reports_its_identity(monkeypatch):
     monkeypatch.setenv("GROQ_API_KEY", "gsk_test")
-    b = GroqBackend(model="qwen/qwen3-32b")
-    assert (b.name, b.model) == ("groq", "qwen/qwen3-32b")
+    b = GroqBackend(model="qwen/qwen3.8-27b")
+    assert (b.name, b.model) == ("groq", "qwen/qwen3.8-27b")

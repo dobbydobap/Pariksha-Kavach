@@ -1,4 +1,4 @@
-"""Groq backend. Free tier, no card, three model families from one key.
+"""Groq backend. Free tier, no card, two model families from one key.
 
 Groq speaks the OpenAI chat-completions shape, so this is mostly translation
 from the internal content-block format (D-039). Raw httpx rather than an SDK:
@@ -26,11 +26,13 @@ from pariksha.gym.transcript import Usage
 
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
+# Confirmed against GET /openai/v1/models rather than assumed; Groq's
+# catalogue moves and a stale id costs a whole run (D-059).
 MODELS = {
-    "llama-3.3-70b-versatile",
-    "qwen/qwen3-32b",
-    "moonshotai/kimi-k2-instruct",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
+    "qwen/qwen3.6-27b",
 }
 
 FREE_TIER_TPM = 6000
@@ -131,7 +133,7 @@ def to_openai_messages(system: str, messages: list[Message]) -> list[dict[str, A
 
 @dataclass
 class GroqBackend:
-    model: str = "llama-3.3-70b-versatile"
+    model: str = "openai/gpt-oss-120b"
     name: str = "groq"
     api_key: str = field(default_factory=lambda: os.environ.get("GROQ_API_KEY", ""))
     temperature: float = 0.0
