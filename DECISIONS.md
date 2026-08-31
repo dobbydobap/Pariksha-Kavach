@@ -1049,3 +1049,20 @@ false positives on genuine prose.
 
 Both are properties of the mechanism rather than oversights, and both belong in
 the limitations section where a reader can weigh them.
+
+### D-087 — Reproducibility is verified from a fresh install, not asserted
+
+The claim that a seed reproduces a run is easy to make and easy to get wrong,
+because a working tree carries untracked files, a built virtualenv and local
+state that a cloner does not receive.
+
+The check copies exactly the 56 files git would ship, builds a new virtualenv
+from `pyproject.toml`, and runs with every provider key unset. All 225 tests
+pass, every CLI command works, and `pariksha rehearse` drives the whole grid --
+runner, gateway, judges, scoring, replay, report -- with no key at all.
+
+The transcripts from the fresh install and the working repository at seed 31337
+are byte-identical, same SHA-256 across 41 episodes. That is the property the
+benchmark rests on, and it is now measured rather than claimed.
+
+It also confirms what is not shipped: no `.env`, no `runs/`, no virtualenv.

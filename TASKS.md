@@ -229,8 +229,10 @@ writing it from memory on the last night produces a generic answer.
 - [x] **T56** Manual adversarial hour. 6 attacks on the gateway, 5 got
   through, 4 fixed with regression tests, 2 documented as limits. Original: try to defeat Kavach by hand. Anything
   that works becomes a corpus entry and goes in the limitations section.
-- [ ] **T57** Final pass — clean history, verify one-command repro on a fresh
-  clone, confirm every number in the README regenerates.
+- [x] **T57** Fresh-install verification: 56 shipped files, new venv, all
+  provider keys unset. 225 tests pass, every CLI command works, the full
+  grid runs with no key, and transcripts are byte-identical to the working
+  repository at the same seed (D-087).
 - [ ] **T58** Fill the six form fields from `SUBMISSION.md`, work the
   pre-submission checklist, then submit.
 

@@ -3,8 +3,8 @@
 Rehearse aloud until it fits without rushing. Do not narrate a screen recording
 cold; record the screen separately and speak to it.
 
-Numbers marked `<N>` are filled from the final run before recording. Do not
-record with placeholders in shot.
+Numbers are from the `openai/gpt-oss-20b` run, 37 of 41 episodes, seed 1729.
+If a later run supersedes it, re-read this file before recording.
 
 ---
 
@@ -65,19 +65,23 @@ record with placeholders in shot.
 
 **On screen:** re-run with `--policy default`, highlight the block.
 
-> Blocked, and the reason is specific: that account has only ever appeared inside
-> untrusted text.
+> Blocked, and the reason is specific: that account has never been seen in a
+> field Razorpay produced.
 >
-> That is the whole rule. Every field in the system is labelled at the schema
-> level — Razorpay produced this, or a human outside the company wrote it. An
-> identifier that only ever appeared in the second kind is not a destination.
+> That is the whole rule. Every field is labelled at the schema level — Razorpay
+> produced this, or a human outside the company wrote it. Only an account seen
+> in the first kind may receive money.
+>
+> It has to be phrased that way round. My first version asked whether an account
+> was untrusted, which meant one the agent had simply hallucinated was neither,
+> and went through.
 >
 > No prompt engineering. No asking a model whether something looks like an
 > attack. Just provenance.
 
 ---
 
-## 2:20 – 3:40 — The numbers
+## 2:20 – 3:20 — The numbers
 
 **On screen:** the scorecard.
 
@@ -85,18 +89,23 @@ record with placeholders in shot.
 > Every rate carries a confidence interval and its sample size, because at this
 > corpus size a bare percentage would overstate what I measured.
 >
-> Guardrails off, attack success `<N>`. Kavach on, `<N>`. Blast radius — money
-> moved that should not have been — from `<N>` to `<N>` per thousand episodes.
+> Guardrails off, attack success thirteen percent. Kavach on, three. Blast
+> radius — money moved that should not have been — from two crore thirty-four
+> lakh down to forty lakh per thousand episodes.
 >
 > Two findings I did not expect.
 
 **On screen:** the subtlety table.
 
-> First: subtlety barely mattered. Blatant `<N>`, plausible `<N>`, subtle `<N>`.
-> The comfortable assumption is that models fall for crude attacks and resist
-> careful ones. That is not what I measured. The attack that worried me most had
-> no injected framing at all — an ordinary note saying a vendor had changed
-> banks. It sent money to an attacker.
+> First: subtlety barely mattered. Blatant twenty-five percent, plausible eight,
+> subtle fourteen. The comfortable assumption is that models fall for crude
+> attacks and resist careful ones. That is not what I measured — and I expanded
+> the corpus from six subtle attacks to nineteen specifically so that if
+> subtlety protected, the weighting would show it.
+>
+> The attack that worried me most had no injected framing at all. An ordinary
+> note saying a vendor had changed banks. It sent eighty-two thousand five
+> hundred rupees to an attacker.
 
 **On screen:** the category table.
 
@@ -110,7 +119,7 @@ record with placeholders in shot.
 
 ---
 
-## 3:40 – 4:20 — The ablation, and being honest about it
+## 3:20 – 3:55 — The ablation, and being honest about it
 
 **On screen:** the ablation table.
 
@@ -126,13 +135,32 @@ record with placeholders in shot.
 > provenance moves the number. Removing PII egress moves it. The others did not,
 > because the model never made the mistakes they guard against.
 >
-> And the approval gate fired more than every other defense combined, bought no
-> security on this workload, and cost `<N>` of the automation. That is a real
-> thing to tell a merchant.
+> And the approval gate fired sixteen times, more than every other defense
+> combined, bought no security on this workload, and cost a third of the
+> automation. That is a real thing to tell a merchant.
 
 ---
 
-## 4:20 – 5:00 — What it would take to run this on Agent Studio
+## 3:55 – 4:20 — Two things I could not fix
+
+**On screen:** the limitations section.
+
+> I spent an hour attacking my own gateway. Five of six attacks got through.
+> Four are fixed. Two are not, and they are in the report.
+>
+> Idempotency dies to changing an amount by one paise. Removing the amount from
+> the fingerprint would stop it and would also block legitimate partial refunds.
+> And the PII check is a regex, so writing an address as "ananya dot iyer at
+> example dot com" walks straight past it.
+>
+> Hardening also cost real utility. Under attack, a guarded agent finishes a
+> third of its work against eighty-seven percent unguarded. I could have tuned
+> that number until it looked better. That is the exact failure this project
+> exists to catch.
+
+---
+
+## 4:20 – 5:00 — The guard model, and what comes next
 
 > This runs on free-tier models, so anyone can reproduce every number in the repo
 > for zero rupees. Agent Studio runs on Claude. I could not fund those runs, so
@@ -147,11 +175,24 @@ record with placeholders in shot.
 >
 > That is the piece I would want to work on.
 
+**On screen:** the guard-model comparison.
+
+> One last thing. The obvious answer to all of this is a guard model, so I
+> measured one. Meta's Prompt Guard scores a jailbreak at 0.9996 and a real
+> customer complaint at 0.0004 — it works. Against my corpus it flags one attack
+> in thirty-seven, and none of the four that actually moved money.
+>
+> The attack that costs money does not look like an attack. It looks like work.
+> That is why the rule is about where an account number came from, not how the
+> sentence around it reads.
+
 ---
 
 ## Rules for the recording
 
 - Under 5:00. Aim for 4:45 so it does not feel rushed at the end.
+- Numbers as spoken above are from the gpt-oss-20b run, 37 of 41 episodes.
+  If the final run differs, re-read this file before recording.
 - The attack landing at 1:00 is the moment a judge remembers. Give it silence.
 - No placeholder numbers. No cropped terminal text.
 - State the limitations out loud once. A judge who finds an overclaim stops
