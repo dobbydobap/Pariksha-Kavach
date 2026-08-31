@@ -8,6 +8,7 @@ from pariksha.agents.base import AgentSpec
 from pariksha.gym.attacks import Attack, apply
 from pariksha.gym.backends.base import Backend, assistant_message, tool_result_message
 from pariksha.gym.transcript import Movement, ToolCall, Transcript, Usage, episode_id
+from pariksha.kavach.gateway import Decision, Kavach
 from pariksha.sandbox.seed import Scenario
 from pariksha.sandbox.state import RazorpayError
 from pariksha.sandbox.tools import dispatch
@@ -18,7 +19,7 @@ def run_episode(
     agent: AgentSpec,
     backend: Backend,
     attack: Attack | None = None,
-    policy: str = "off",
+    kavach: Kavach | None = None,
 ) -> Transcript:
     """Run one episode to completion and return its transcript.
 
@@ -26,6 +27,7 @@ def run_episode(
     metadata cannot drift out of sync with the state the agent actually saw.
     """
     sc = apply(scenario, attack) if attack else scenario
+    policy = kavach.policy.name if kavach else "off"
     tool_defs = agent.tool_definitions()
     allowed = set(agent.tools)
 
@@ -59,13 +61,16 @@ def run_episode(
         for use in completion.tool_uses:
             if len(calls) >= agent.call_budget:
                 break
-            result = _invoke(sc, use.name, use.arguments, allowed)
+            result, block = _invoke(sc, use.name, use.arguments, allowed, kavach)
             calls.append(
                 ToolCall(
                     index=len(calls),
                     name=use.name,
                     arguments=use.arguments,
                     result=result,
+                    blocked=block is not None,
+                    block_reason=block.reason if block else None,
+                    blocked_by=block.defense if block else None,
                 )
             )
             results.append((use.id, json.dumps(result, ensure_ascii=False)))
@@ -82,6 +87,7 @@ def run_episode(
         seed=sc.state.seed,
         policy=policy,
         task=sc.task,
+        tools=list(agent.tools),
         calls=calls,
         movements=[
             Movement(m.kind, m.entity_id, m.amount_paise, m.direction, m.destination)
@@ -94,16 +100,42 @@ def run_episode(
     )
 
 
-def _invoke(scenario: Scenario, name: str, args: dict, allowed: set[str]) -> dict:
-    """Dispatch one call, refusing tools outside the agent's scope.
+def _invoke(
+    scenario: Scenario,
+    name: str,
+    args: dict,
+    allowed: set[str],
+    kavach: Kavach | None,
+) -> tuple[dict, Decision | None]:
+    """Dispatch one call through the gateway. Returns (result, blocking decision).
 
-    A scoped agent that reaches for a tool it was not given must see the same
-    404 a real API would return, otherwise the tool-scoping ablation would
-    measure nothing.
+    A tool outside the agent's scope sees the same 404 a real API would return,
+    otherwise the tool-scoping ablation would measure nothing (D-041). A gateway
+    refusal is surfaced as an error body too, so the agent gets the chance to
+    recover the way it would in production.
     """
     if name not in allowed:
-        return RazorpayError(
+        error = RazorpayError(
             f"The requested URL was not found on the server: {name}",
             code="NOT_FOUND_ERROR",
         ).to_dict()
-    return dispatch(scenario.state, name, args)
+        return error, None
+
+    if kavach is not None:
+        decision = kavach.check(name, args)
+        if not decision.allow:
+            error = RazorpayError(
+                f"Blocked by Kavach ({decision.defense}): {decision.reason}",
+                code="POLICY_DENIED",
+            ).to_dict()
+            return error, decision
+
+    result = dispatch(scenario.state, name, args)
+
+    if kavach is not None:
+        if "error" in result:
+            kavach.observe(result)
+        else:
+            kavach.record_success(name, args, result)
+
+    return result, None

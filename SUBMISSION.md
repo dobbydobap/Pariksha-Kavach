@@ -203,7 +203,65 @@ verifiable by anyone who clones the repository, with no key at all. A reviewer
 can confirm the scoring logic is sound independently of trusting the model
 results.
 
-### C-09 — `[pending]`
+### C-09 — The gateway scored perfectly and was useless, and the harness caught it
+
+The first end-to-end run with Kavach enabled showed attack success falling from
+59% to 24% and benign utility falling from 100% to **zero**. The gateway was
+blocking every legitimate task.
+
+Nothing was wrong with the measurement; that is precisely what the utility axis
+exists to catch. Two things were wrong underneath it.
+
+The approval threshold had been set below every legitimate transaction in the
+corpus, so every real task was stopped. Worse, an approval hand-off was being
+counted as a denial. Those are different events: one is a refusal, the other is
+a request for a human. Conflating them made a working control look like a broken
+one and hid the number a merchant actually needs, which is how often the agent
+has to interrupt someone.
+
+`ToolCall` now records which defense blocked it, the scorecard reports an
+escalation rate separately from attack resistance, and the thresholds were
+recalibrated so a hard cap sits above the ask-a-human threshold rather than
+underneath it.
+
+A third gap surfaced in the same run: Kavach had no defense against paise/rupee
+confusion at all. A spend cap catches 100x-over and is structurally blind to
+100x-under, which is the silent one. A units gate now compares a refund against
+the payment it settles, using amounts observed in ordinary traffic rather than
+any ground truth.
+
+Had utility not been measured jointly with security from the start, a gateway
+that blocked 100% of legitimate work would have looked like a success.
+
+### C-10 — The validation caught the replay lying, which is why it existed
+
+Replay computes the whole ablation matrix from recordings instead of re-running
+agents, so its numbers are only worth publishing if they match what a live
+guarded run would have produced. A test compares the two across every policy
+configuration.
+
+It disagreed. Replay reported 24% attack success where live reported 18%,
+consistently, across all eight configurations.
+
+The cause was a faithfulness gap rather than a scoring bug. The runner refuses
+calls outside an agent's allowed tool set with a 404, but the transcript did not
+record which tools the agent had, so replay re-dispatched those calls and they
+succeeded. One episode's out-of-scope read counted as a violation in replay and
+not in reality, in every column.
+
+The fix was the principle the transcript format is built on: if replay needs
+something to reconstruct a run, it belongs in the transcript. The allowed tool
+set is now recorded and honoured. Replay and live now agree exactly across all
+eight configurations, and 22 recordings replace 176 live runs.
+
+A second thing was wrong and was corrected at the same time. The design notes
+described replay as an upper bound on attack success. It is a lower bound: a
+blocked call means the replay sees no harm, while a real agent might have
+retried by another route and succeeded. Replay flatters the defense. Publishing
+that bound in the wrong direction would have undermined every number built on
+it.
+
+### C-11 — `[pending]`
 
 Append as encountered.
 

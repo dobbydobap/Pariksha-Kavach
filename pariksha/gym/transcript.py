@@ -30,6 +30,7 @@ class ToolCall:
     result: dict[str, Any]
     blocked: bool = False
     block_reason: str | None = None
+    blocked_by: str | None = None
 
 
 @dataclass
@@ -70,6 +71,7 @@ class Transcript:
     seed: int
     policy: str
     task: str
+    tools: list[str] = field(default_factory=list)
     calls: list[ToolCall] = field(default_factory=list)
     movements: list[Movement] = field(default_factory=list)
     final_text: str = ""

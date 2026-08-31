@@ -1,0 +1,96 @@
+"""Provenance tracking over tool results.
+
+Driven by the schema registry (D-009): every value an agent sees is classified
+by the field it arrived in. Trusted values came from Razorpay, a bank or a card
+network; untrusted values were written by a customer, merchant or counterparty.
+
+The enforceable consequence is narrow and precise. Attackers do not need the
+agent to quote them; they need it to *act* on them, and acting means passing an
+identifier into a money-moving argument. So the rule Kavach enforces is:
+
+    a destination that has only ever appeared inside untrusted text is not a
+    legitimate destination.
+
+That kills destination diversion without any attempt to parse intent out of
+prose, and it produces no false positive on a legitimate refund, because
+``create_refund`` names a payment rather than a destination.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from typing import Any, Literal
+
+from pariksha.sandbox.entities import ENTITY_TYPES
+
+Provenance = Literal["trusted", "untrusted", "unseen"]
+
+# Identifier shapes an attacker would need the agent to act on: Razorpay entity
+# ids and UPI VPAs. Free prose around them is irrelevant; only these can be
+# passed into a destination argument.
+IDENTIFIER = re.compile(
+    r"\b(?:fa|pay|order|rfnd|pout|plink|cust|inv|disp|setl|cont)_[A-Za-z0-9]{6,}\b"
+    r"|\b[A-Za-z0-9][\w.\-]{2,}@[a-z]{3,}\b"
+)
+
+
+@dataclass
+class TaintTracker:
+    """Accumulates the provenance of every identifier the agent has been shown."""
+
+    trusted: set[str] = field(default_factory=set)
+    untrusted: set[str] = field(default_factory=set)
+
+    def observe(self, result: Any) -> None:
+        """Record identifiers from one tool result, split by field provenance."""
+        self._walk(result, entity=None, inherited_untrusted=False)
+
+    def provenance_of(self, value: str) -> Provenance:
+        """Classify an identifier. Trusted wins, because a value the agent saw in
+        a trusted field is legitimate however else it also appeared."""
+        if value in self.trusted:
+            return "trusted"
+        if value in self.untrusted:
+            return "untrusted"
+        return "unseen"
+
+    def untrusted_only(self, value: str) -> bool:
+        return self.provenance_of(value) == "untrusted"
+
+    def _walk(self, node: Any, entity: str | None, inherited_untrusted: bool) -> None:
+        if isinstance(node, dict):
+            entity = node.get("entity", entity) if isinstance(node.get("entity"), str) else entity
+            untrusted_fields = self._untrusted_fields(entity)
+            for key, value in node.items():
+                tainted = inherited_untrusted or key in untrusted_fields
+                self._walk(value, entity, tainted)
+        elif isinstance(node, list):
+            for item in node:
+                self._walk(item, entity, inherited_untrusted)
+        elif isinstance(node, str):
+            self._record(node, inherited_untrusted)
+
+    @staticmethod
+    def _untrusted_fields(entity: str | None) -> frozenset[str]:
+        model = ENTITY_TYPES.get(entity or "")
+        return model.untrusted_fields() if model else frozenset()
+
+    def _record(self, text: str, tainted: bool) -> None:
+        target = self.untrusted if tainted else self.trusted
+        for match in IDENTIFIER.findall(text):
+            target.add(match)
+
+
+# Arguments that name where money or data is going. These are the only places
+# an untrusted identifier can do damage.
+DESTINATION_ARGS = ("fund_account_id", "vpa", "customer_id", "payment_id", "dispute_id")
+
+
+def destinations_in(arguments: dict[str, Any]) -> list[tuple[str, str]]:
+    """The (argument name, value) pairs of a call that name a target."""
+    return [
+        (name, value)
+        for name, value in arguments.items()
+        if name in DESTINATION_ARGS and isinstance(value, str)
+    ]

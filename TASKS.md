@@ -104,24 +104,27 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 2 — Kavach, the gateway
 
-- [ ] **T23** `kavach/ledger.py` — hash-chained append-only audit log.
-- [ ] **T24** Tests for ledger, including detection of a tampered middle entry.
-- [ ] **T25** `kavach/taint.py` — provenance tagging over tool results, driven by
+- [x] **T23** `kavach/ledger.py` — hash-chained append-only audit log.
+- [x] **T24** Tests for ledger, including detection of a tampered middle entry.
+- [x] **T25** `kavach/taint.py` — provenance tagging over tool results, driven by
   the schema registry from `entities.untrusted_field_registry()`.
-- [ ] **T26** Tests for taint propagation and the fail-closed unknown-field path.
-- [ ] **T27** `kavach/policy.py` — declarative YAML policy: per-tool spend caps,
+- [x] **T26** Tests for taint propagation and the fail-closed unknown-field path.
+- [x] **T27** `kavach/policy.py` — declarative YAML policy: per-tool spend caps,
   aggregate ceilings, destination allowlists, approval thresholds, PII egress
   rules. Typed and validated at load.
-- [ ] **T28** Tests for policy parsing and evaluation, including malformed policy.
-- [ ] **T29** `kavach/idempotency.py` — request fingerprinting and replay refusal.
-- [ ] **T30** Tests for idempotency across retries and near-duplicate calls.
-- [ ] **T31** `kavach/breaker.py` — circuit breaker on repeated policy denials.
-- [ ] **T32** `kavach/gateway.py` — composed enforcement point; every defense
+- [x] **T28** Tests for policy parsing and evaluation, including malformed policy.
+- [x] **T29** `kavach/idempotency.py` — request fingerprinting and replay refusal.
+- [x] **T30** Tests for idempotency across retries and near-duplicate calls.
+- [x] **T31** `kavach/breaker.py` — circuit breaker on repeated policy denials.
+- [x] **T32** `kavach/gateway.py` — composed enforcement point; every defense
   independently toggleable so ablation is possible (D-021).
-- [ ] **T33** End-to-end gateway tests against the mock backend.
-- [ ] **T34** `kavach/replay.py` — offline ablation: replay a recorded transcript
+- [x] **T33** End-to-end gateway tests against the mock backend.
+- [ ] **T33b** A `units` reference the gateway can fetch itself, so the
+  paise defense does not depend on the agent having looked at the payment
+  first (D-047).
+- [x] **T34** `kavach/replay.py` — offline ablation: replay a recorded transcript
   through any policy configuration. Must mark upper-bound cases explicitly.
-- [ ] **T35** Tests for replay, including a case proving the upper-bound label is
+- [x] **T35** Tests for replay, including a case proving the upper-bound label is
   applied when a block would have changed later behaviour.
 
   ```

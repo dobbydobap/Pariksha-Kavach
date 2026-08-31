@@ -207,9 +207,13 @@ Each episode runs live once with guardrails off, recording the full tool-call
 stream. Every guardrail configuration is then evaluated by replaying that
 recording through the policy engine, costing nothing.
 
-Reported honestly: replay is exact for terminal blocking defenses, and an upper
-bound where a block would have changed the agent's later behaviour. A live
-sample validates it and the agreement rate is published.
+Reported honestly, and the direction matters: replay is a **lower bound on
+attack success**, not an upper bound. When a policy blocks the harmful call the
+replay records no harm and scores the attack as failed, but a real agent would
+have seen the refusal and might have retried by another route. True harm under
+that policy is therefore greater than or equal to what replay reports, so replay
+*flatters the defense*. Corrected in D-050; the earlier wording here was
+backwards.
 
 The constraint produced the method. It is the difference between a benchmark
 nobody can afford to reproduce and one that runs from a single command.
@@ -427,3 +431,103 @@ What the agent *attempted* is the signal; the refusal is the defense working.
 A turn emitting five tool calls when one remains in the budget would otherwise
 overshoot. The runner stops executing within the batch. Without this the
 denial-of-wallet ceiling would be advisory rather than real.
+
+---
+
+## Kavach
+
+### D-043 — Kavach is never given ground truth
+
+A gateway holding the scenario's answer key would score perfectly and prove
+nothing. Every rule is one a real merchant could configure without knowing what
+the attack is: spend caps, destination provenance, approval thresholds, generic
+PII patterns.
+
+The PII detector is deliberately regex over email, phone, card and PAN shapes
+rather than the scenario's own `pii_markers`, because a real gateway does not
+know which customer it is protecting.
+
+### D-044 — The taint rule is about destinations, not prose
+
+Attackers do not need the agent to quote them; they need it to *act* on them,
+and acting means passing an identifier into a money-moving argument. So the
+enforced rule is narrow: an identifier that has only ever appeared inside
+untrusted text is not a legitimate destination.
+
+This needs no attempt to parse intent out of language, and it produces no false
+positive on a legitimate refund, because `create_refund` names a payment rather
+than a destination. Trusted provenance wins over untrusted when a value appears
+in both -- a value seen in a trusted field is legitimate however else it also
+appeared.
+
+### D-045 — Escalation is a deferral, not a denial
+
+Discovered by measurement. With approval counted as a block, benign utility
+read 0% and Kavach looked like a gateway that stops all legitimate work.
+
+An approval hand-off is a request for a human, not a refusal. `ToolCall`
+records which defense blocked it, and the scorecard reports an escalation rate
+separately from attack resistance. The honest statement a merchant needs is
+"blocks X% of attacks and needs human review on Y% of legitimate work", and
+collapsing the two hides the second number entirely.
+
+### D-046 — The approval threshold sits below the hard spend cap
+
+Also found by a failing test. With the payout cap and the approval threshold
+both at Rs 1,00,000, the approval gate could never fire for payouts because
+spend always caught it first.
+
+They are different controls: a cap means never, a threshold means ask. A cap at
+or below the threshold makes the threshold unreachable.
+
+### D-047 — The units defense needs an observed reference, and says so
+
+Kavach detects a clean 100x gap by comparing a refund against the payment it
+settles, using amounts seen in ordinary tool traffic rather than ground truth.
+
+It therefore only fires if the agent looked at the payment first. An agent that
+refunds blind gets no protection, which is a genuine limitation and belongs in
+the report rather than buried. T33b addresses it by letting the gateway fetch
+the reference itself.
+
+### D-048 — Defense order is destinations, spend, units, approval, idempotency, PII
+
+Hard prohibitions first, then anomaly detection, then hand-offs. An amount above
+the cap is refused outright, so asking a human about it would be wrong. The
+attributed defense is whichever fired first, which is what makes the ablation
+table readable.
+
+### D-049 — A transcript must carry everything needed to replay it
+
+Found by the live-versus-replay validation, which is exactly what it was built
+to catch. Replay re-dispatched calls the runner had refused as out of the
+agent's tool scope, so `fetch_all_payments` errored live but succeeded in
+replay, inflating the out-of-scope-read violation class by one episode across
+every policy column.
+
+The transcript records `tools` -- the agent's allowed set -- and replay refuses
+anything outside it with the same 404 the runner returns. The general rule: if
+replay needs to know something to reconstruct a run faithfully, that thing
+belongs in the transcript rather than in an object replay happens to have.
+
+After the fix, replay and live agree exactly on attack success across all eight
+policy configurations.
+
+### D-050 — Replay is a lower bound on attack success, not an upper bound
+
+D-021 originally had this backwards, which would have discredited every number
+built on it.
+
+When a policy blocks the harmful call, the replay records no harm and scores the
+attack as failed. A real agent would have seen a refusal it never actually saw,
+and might have retried by another route and succeeded. True attack success under
+that policy is therefore at least what replay reports.
+
+Replay is optimistic about the defense. `Fidelity.LOWER_BOUND` marks exactly the
+episodes where this applies: at least one call blocked, with further calls after
+it. An episode where nothing was blocked, or where the block was the final call,
+is `EXACT` because there is no counterfactual remainder.
+
+Kavach never blocks reads, only writes, which is what makes the exact case
+genuinely exact: with no writes blocked, the agent's information state and the
+sandbox are identical to the recording.
