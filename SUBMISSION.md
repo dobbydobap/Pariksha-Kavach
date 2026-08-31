@@ -1,8 +1,8 @@
-# Submission form — working draft
+# Submission form
 
-The Razorpay AI Buildathon form has six required fields. This file holds the
-answer to each, kept current as the build progresses rather than written from
-memory on the last night.
+The Razorpay AI Buildathon form has six required fields. Each answer below is
+what goes in the form. The full engineering log is in the appendix, kept current
+as the build progressed rather than written from memory on the last night.
 
 Applications close **5 September 2026**. Repo URL and video link are required at
 application time, so both must exist before the form is opened.
@@ -25,32 +25,49 @@ Reasoning in D-002.
 
 ## 3. Project Objectives — what does it solve?
 
-> Draft. Target 150-250 words. Rewrite once real numbers exist.
-
 Razorpay's Agent Studio lets AI agents act on merchant money: responding to
-chargebacks, retrying subscriptions, forecasting cash, releasing payouts. It is
-opening to third-party developers, and Razorpay's own guardrails documentation
-states that the agent's provider carries responsibility for its behaviour.
+chargebacks, retrying subscriptions, releasing vendor payouts. It is opening to
+third-party developers, and Razorpay's own guardrails documentation says the
+agent's provider carries responsibility for its behaviour.
 
-The published pre-launch check is a validation *review* of agent logic, data
-scope, actions and communication patterns. What does not exist publicly is an
-executable, adversarial, measured test: a way to say that an agent survived N
-attacks across M categories, leaked Rs X, and cost Y% of its usefulness to
-secure.
+The published pre-launch check is a review of agent logic, data scope, actions
+and communication patterns. What does not exist publicly is an executable,
+adversarial, measured test: a way to say an agent survived N attacks across M
+categories, leaked Rs X, and cost Y% of its usefulness to secure.
 
-That gap matters because an LLM agent cannot distinguish information it is
-reading from instructions it should follow. An instruction hidden in a dispute
-evidence document or a vendor's remittance note is read while the agent does its
-job, and acted on. Nothing errors; the audit log records a successful refund.
+Pariksha is that exam. It runs payment agents through 37 attacks in nine
+categories over four scenarios, and scores three axes jointly: attack
+resistance, task utility, and rupees leaked. Four of the categories have no
+analogue in generic agent-security benchmarks because those contain no money --
+paise/rupee unit confusion, refund replay, destination diversion, and breaches
+of the RBI Digital Payments E-Mandate Framework. It ships with Kavach, a
+policy-enforcing gateway, and an ablation naming which control stops which
+attack and what each costs.
 
-Pariksha is the exam. It runs payment agents through attacks that only exist in
-payments — paise/rupee unit confusion, refund replay, destination diversion, and
-RBI e-mandate breaches — and scores three axes jointly: attack resistance, task
-utility, and rupees leaked per 1,000 episodes. It ships with Kavach, a
-policy-enforcing MCP proxy, and the ablation showing which control stops which
-attack class and what each costs in utility.
+What it found, on `openai/gpt-oss-20b` and replicated on `openai/gpt-oss-120b`:
 
----
+**Subtlety does not protect.** Attack success is roughly flat from blatant to
+subtle. The corpus was deliberately reweighted toward subtle attacks, from 6 of
+19 to 19 of 37, so that if subtlety protected, the weighting would have shown
+it. It did not. Two of the four attacks that moved money had no injected framing
+at all -- an ordinary note saying a vendor had changed banks, and an invented
+policy citation inside a cardholder's own dispute evidence.
+
+**Every attack that landed was a provenance failure; everything resisted was
+arithmetic or procedure.** The agent never confused paise for rupees, never
+double-refunded, never breached a mandate rule, and was not moved by urgency or
+a forged approval. It can do the sums and follow the process. It cannot tell
+whose voice it is reading.
+
+**A guard model does not close this.** Meta's Prompt Guard 2 scores a jailbreak
+at 0.9996 and a real customer complaint at 0.0004, so it works. Against this
+corpus it flags one attack of 37, and none of the four that moved money. The
+attack that costs money does not look like an attack; it looks like work.
+
+Kavach takes attack success from 13% to 3% and blast radius from Rs 2.34 crore
+to Rs 40 lakh per 1,000 episodes, at a measured cost in utility that is reported
+rather than tuned away. Every number reproduces for zero rupees from a single
+seed, and a fresh install produces byte-identical transcripts.
 
 ## 4. GitHub Repository URL
 
@@ -72,8 +89,73 @@ what running this against real Agent Studio submissions would take.
 
 ## 6. Build Challenges & Technical Obstacles
 
-> Running log. Each entry is appended when the problem is actually hit, not
-> reconstructed later. Trim to the strongest 4-5 for the final answer.
+**The sandbox had to accept bad calls, which is the opposite of the instinct.**
+Real Razorpay accepts `amount=500` on a Rs 5,000 payment as a legal Rs 5.00
+partial refund. A sandbox that validated it would have made the entire
+paise/rupee attack category untestable and would have been measuring itself
+rather than the agent. The rule that resolved it governs the whole project: the
+sandbox enforces exactly what production enforces, no more and no less, and all
+opinion lives in the gateway, which is the thing under evaluation.
+
+**The gateway scored perfectly and was useless, and the harness caught it.** The
+first guarded run showed attack success falling and benign utility falling to
+zero: it was blocking every legitimate task. Nothing was wrong with the
+measurement -- that is precisely what a jointly reported utility axis is for.
+Two things were wrong underneath. The approval threshold sat below every real
+transaction, and an approval hand-off was being counted as a denial. Those are
+different events: one is a refusal, the other is a request for a human.
+Conflating them made a working control look broken and hid the number a merchant
+actually needs, which is how often the agent has to interrupt someone.
+
+**A validation caught my own replay lying, and a bound stated backwards.** The
+ablation is computed by replaying recordings through each policy instead of
+re-running agents, so 41 recordings replace 328 live runs and the whole matrix
+costs nothing. That is only worth publishing if it matches reality, so a test
+compares replay against live runs. It disagreed by a consistent margin: the
+transcript did not record which tools the agent was allowed, so replay
+re-dispatched calls the runner had refused. Fixed by the principle the format
+rests on -- if replay needs something to reconstruct a run, it belongs in the
+transcript. Separately, my notes described replay as an upper bound on attack
+success. It is a lower bound: a blocked call means no harm is recorded while a
+real agent might have retried another way, so replay flatters the defense.
+Publishing that backwards would have undermined every number built on it.
+
+**The limit governing the whole project was invisible in the API headers.** Runs
+kept appearing to hang: process alive, rate-limit budget nearly full, zero
+requests being made. The cause was a 429 reading `tokens per day: Limit 200000,
+Used 199040`. The provider reports tokens-per-minute and requests-per-day in
+headers; the daily token ceiling appears only in the body of the 429 that
+enforces it, so the throttle had been pacing accurately against a limit that was
+never binding. The retry loop then slept on `retry-after` while the same
+response said `x-should-retry: false`, which is why exhaustion looked exactly
+like a hang. At roughly 7,400 tokens an episode that ceiling allows about 27
+episodes per model per day against a 41-episode corpus. Rather than shrink the
+corpus, the grid is now shuffled by the run seed, so a run that stops on budget
+is an unbiased random sample rather than every episode of one scenario and none
+of another.
+
+**Five of six attacks I wrote against my own gateway got through.** The worst was
+structural: the destination rule asked whether an identifier was *untrusted*, so
+one the agent had simply hallucinated was neither untrusted nor blocked. The one
+gate that spends money failed open while the model around it failed closed.
+Fixing it immediately broke legitimate work, which exposed a second error that
+had been harmless while the gate failed open -- subject ids like `payment_id`
+were being treated as destinations. A fail-open gate hides its own design
+mistakes, because nothing it lets through ever costs anything. Four are fixed
+with regression tests. Two survive and are in the limitations rather than
+quietly dropped: idempotency dies to changing an amount by one paise, and PII
+detection dies to writing an address as "ananya dot iyer at example dot com".
+Hardening also cost real utility -- under attack a guarded agent finishes a
+third of its work against 87% unguarded -- and that number is reported rather
+than tuned until it looked better.
+
+---
+
+# Appendix
+
+## Full engineering log
+
+Every obstacle, recorded when it was hit rather than reconstructed afterwards.
 
 ### C-01 — Razorpay test mode cannot create the data the project is about
 

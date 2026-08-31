@@ -454,6 +454,10 @@ know which customer it is protecting.
 
 ### D-044 — The taint rule is about destinations, not prose
 
+**Amended by D-081 and D-084:** the rule below is stated as "not untrusted",
+which failed open on identifiers never observed at all. It now requires positive
+trusted provenance, and applies only to true destinations.
+
 Attackers do not need the agent to quote them; they need it to *act* on them,
 and acting means passing an identifier into a money-moving argument. So the
 enforced rule is narrow: an identifier that has only ever appeared inside

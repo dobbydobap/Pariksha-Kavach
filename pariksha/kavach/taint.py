@@ -8,8 +8,11 @@ The enforceable consequence is narrow and precise. Attackers do not need the
 agent to quote them; they need it to *act* on them, and acting means passing an
 identifier into a money-moving argument. So the rule Kavach enforces is:
 
-    a destination that has only ever appeared inside untrusted text is not a
-    legitimate destination.
+    only an identifier seen in a field Razorpay produced may receive money.
+
+Stated positively on purpose. Asking "is it untrusted" let through an identifier
+the tracker had never observed at all -- a hallucinated account number -- which
+failed open on the one gate that spends money (D-081).
 
 That kills destination diversion without any attempt to parse intent out of
 prose, and it produces no false positive on a legitimate refund, because
