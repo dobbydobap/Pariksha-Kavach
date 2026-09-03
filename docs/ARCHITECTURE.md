@@ -306,8 +306,9 @@ everywhere. These are pilot measurements.
 
 **One provider, two model families.** GPT-OSS and Qwen via Groq's free tier.
 Razorpay's Agent Studio runs on Claude, and that column is reported as **not
-measured** because those runs could not be funded. The Anthropic backend is
-written and runs unchanged once funded (D-031). Claiming numbers that were never
+measured** because those runs could not be funded. Adding that provider is one
+file against the `Backend` protocol, and that file is not written: there are no
+Claude measurements here of any kind (D-031). Claiming numbers that were never
 run would fail the standard this project exists to enforce.
 
 **The sandbox is not Razorpay.** It reproduces the wire shape and the constraints

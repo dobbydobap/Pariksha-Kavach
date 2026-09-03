@@ -13,3 +13,9 @@ build/
 runs/
 report_out/
 .DS_Store
+
+# Working material: application draft, project board, speaking script.
+# Kept on disk, out of the repository (D-096).
+SUBMISSION.md
+TASKS.md
+docs/VIDEO.md

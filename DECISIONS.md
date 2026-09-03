@@ -332,9 +332,10 @@ funded key does not.
 
 Razorpay's Agent Studio runs on Claude, so the Claude column is the one that
 speaks most directly to this panel, and it is reported as **not measured** with
-the reason stated. `--backend anthropic --model claude-haiku-4-5` runs it
-unchanged the day it is funded. Claiming numbers that were not run would fail
-the exact honesty standard the project is built to enforce.
+the reason stated. Adding that provider is one file against the `Backend`
+protocol; the file is not written and no Claude measurement exists in this
+repository. Claiming numbers that were not run would fail the exact honesty
+standard the project is built to enforce (corrected in D-095).
 
 Groq's 6,000 TPM is the binding constraint, not its request cap: with no prompt
 caching, an eight-turn episode costs roughly 51k cumulative tokens, so about 8.5
@@ -1197,3 +1198,33 @@ Every layout was checked by rendering it in a headless browser and looking at
 the result. Three collisions were invisible in the source and obvious on screen:
 the message envelope covered the agent, the money circle sat on top of the block
 cross, and the closing caption ran through the attacker's legs.
+
+### D-095 — A backend described as "written and ready" did not exist
+
+Four documents, the README among them, said the Anthropic backend was written
+and would run unchanged once funded. `pariksha/gym/backends/anthropic.py` was
+never created. Anyone grepping for the file would have found nothing.
+
+It was an intention that hardened into a claim across successive edits, and it
+is the worst kind of error this project can make: an overstatement about the one
+provider whose numbers are already reported as unmeasured. A reader who catches
+it stops believing the measurements that *are* real.
+
+The documents now say what is true. Adding a provider is one file against the
+`Backend` protocol, that file is not written, and there are no Claude
+measurements in the repository at all.
+
+The unused `anthropic` and `claude-agent-sdk` dependencies went with it. Nothing
+imported either, so every cloner was installing them for nothing.
+
+### D-096 — The repository ships the work, not the paperwork
+
+`SUBMISSION.md`, `TASKS.md` and `docs/VIDEO.md` are working material: an
+application draft, a project board, and a script for speaking over a screen
+recording. They are useful to write and odd to publish, and a repository that
+opens with someone's own presentation notes reads as less finished than one that
+opens with the work.
+
+They stay on disk and out of version control. `DECISIONS.md` stays in, because
+it is not paperwork -- it is the reasoning behind the code, and it is the thing
+that answers "why is it built this way" without anyone having to ask.

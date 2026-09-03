@@ -221,8 +221,6 @@ pariksha/
 | Corpus expansion, three-model sweep, red team | done |
 | Video and submission | in progress |
 
-Task board: [TASKS.md](TASKS.md).
-
 ## Run it
 
 ```bash
@@ -256,10 +254,12 @@ so the whole matrix costs nothing beyond the single baseline pass.
 
 Razorpay's Agent Studio is built on Claude, so that is the column that matters
 most here, and it is reported as **not measured** — those runs could not be
-funded. The Anthropic backend is written and ready; `--backend anthropic
---model claude-haiku-4-5` produces the column the day it is funded. Claiming
-numbers that were never run would fail the standard this project exists to
-enforce (D-031).
+funded. The backend interface is swappable, so adding a provider is one file
+against the `Backend` protocol in
+[`gym/backends/base.py`](pariksha/gym/backends/base.py) — but that file is not
+written, and this repository contains no Claude measurements. Claiming numbers
+that were never run would fail the standard this project exists to enforce
+(D-031).
 
 ## Licence
 
