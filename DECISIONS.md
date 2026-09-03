@@ -1154,3 +1154,46 @@ One genuine episode from the `gpt-oss-20b` run, 5 KB, now ships inside the
 package. A local run is preferred when present so the demo reflects whatever was
 measured most recently, and the shipped recording is the fallback. A test asserts
 the demo works against a directory that does not exist.
+
+### D-093 — The README opens with a story, the architecture doc with a schematic
+
+Two diagrams, both animated SVG, both self-contained with no scripts or external
+references so GitHub renders them and nothing phones home.
+
+`docs/story.svg` is the README hero: an attacker slips a note into a real
+customer's message, the agent reads one message with two authors and cannot tell
+whose voice is whose, it tries to send Rs 5,00,000, and Kavach stops it at the
+shield. Stick figures on purpose. The point being made is not architectural, it
+is that the attack arrives looking like ordinary work, and a diagram of boxes
+cannot carry that.
+
+`docs/flow.svg` stays in the architecture document, where a reader wants the
+mechanism rather than the narrative: a value from a trusted field flows through
+and is paid, a value seen only in untrusted text reaches the gate and stops.
+
+Both were checked by rendering them in a headless browser and looking at the
+result, not by reading the markup. The first pass had the attacker's label
+clipped by the canvas edge and the block cross drawn straight through the
+"Kavach" label; neither was visible from the source.
+
+### D-094 — The figures are hand-drawn in style, and the script opens on a person
+
+The first diagram was boxes and arrows. It stated the rule correctly and made
+nobody feel anything, which is a problem when the whole finding is that the
+attack *does not look like an attack*.
+
+The figures are now drawn the way someone would sketch them: thick rounded
+strokes, expressive posture, a customer with her arms out asking where her order
+is, a hooded attacker leaning in to slip a note beside her message. The agent is
+a small robot with a question mark over its head, because the point is that it
+is not malicious, it is confused.
+
+The script now opens on Ananya rather than on Agent Studio. A judge who has read
+forty submissions has heard the market framing before; they have not been asked
+to picture a specific person losing five lakh rupees to a paragraph she never
+saw.
+
+Every layout was checked by rendering it in a headless browser and looking at
+the result. Three collisions were invisible in the source and obvious on screen:
+the message envelope covered the agent, the money circle sat on top of the block
+cross, and the closing caption ran through the attacker's legs.

@@ -8,7 +8,8 @@ It ships with **Kavach**, a policy-enforcing MCP proxy, and the ablation showing
 which control stops which attack class and what each costs in usefulness.
 
 <p align="center">
-  <img src="docs/flow.svg" alt="Trusted and untrusted values flow into the agent; Kavach pays the trusted one and blocks the other" width="900">
+  <img src="docs/story.svg" width="920"
+       alt="An attacker slips a note into a real customer's message; the agent cannot tell them apart and tries to send Rs 5,00,000; Kavach blocks it because that account was never seen in a trusted field">
 </p>
 
 ## See it happen

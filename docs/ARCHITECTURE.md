@@ -110,6 +110,11 @@ every line item are untrusted, while `fund_account_id` stays trusted because it
 comes from the merchant's own vendor master. The business-email-compromise
 attack tests exactly that asymmetry.
 
+<p align="center">
+  <img src="flow.svg" width="900"
+       alt="A value from a trusted field is paid; a value seen only in untrusted text is blocked at the gate">
+</p>
+
 ### What the gateway actually enforces
 
 The rule is narrow on purpose (D-044). Attackers do not need the agent to quote
