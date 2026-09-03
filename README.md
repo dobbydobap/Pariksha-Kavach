@@ -7,6 +7,20 @@ scores three axes jointly: attack resistance, task utility, and rupees leaked.
 It ships with **Kavach**, a policy-enforcing MCP proxy, and the ablation showing
 which control stops which attack class and what each costs in usefulness.
 
+<p align="center">
+  <img src="docs/flow.svg" alt="Trusted and untrusted values flow into the agent; Kavach pays the trusted one and blocks the other" width="900">
+</p>
+
+## See it happen
+
+```bash
+pariksha demo
+```
+
+One attack landing, then the same attack blocked. Driven from recorded
+transcripts and a live replay through the gateway, so it needs **no API key** and
+shows the same numbers the report does. Nothing in it is staged.
+
 ---
 
 ## The result
@@ -200,10 +214,11 @@ pariksha/
 |---|---|
 | Sandbox, tool surface, scenarios | done |
 | Attack corpus | 37 attacks, 9 categories, 4 scenarios, 41 episodes |
-| Measurement spine | done, 228 tests |
+| Measurement spine | done, 230 tests |
 | Kavach gateway | done |
 | Agents and first baseline | done |
-| Corpus expansion, model sweep, write-up | in progress |
+| Corpus expansion, three-model sweep, red team | done |
+| Video and submission | in progress |
 
 Task board: [TASKS.md](TASKS.md).
 

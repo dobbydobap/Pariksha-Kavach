@@ -358,8 +358,9 @@ one file.
 
 ```bash
 uv venv --python 3.12 && uv pip install -e ".[dev]"
-pytest -q                    # 220 tests, no API key required
+pytest -q                    # 230 tests, no API key required
 
+pariksha demo                # one attack landing, then blocked. no key
 pariksha rehearse            # whole pipeline end to end, still no key
 pariksha bench --backend groq --model openai/gpt-oss-120b
 pariksha ablate <run>        # every policy, from recordings, no model calls

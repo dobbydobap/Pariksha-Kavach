@@ -1127,3 +1127,30 @@ earlier runs (D-074) is now a clean, informative stop.
 Because the grid is shuffled by seed (D-075), those 17 episodes are a random
 sample across all four scenarios rather than a prefix of one, so they can be
 reported as a sample rather than discarded.
+
+---
+
+## The demo
+
+### D-091 — The demo is driven by recorded data, not a script
+
+`pariksha demo` shows one attack landing and then the same attack blocked. The
+calls, the amounts and the block reason are read from a real recorded transcript
+and a live replay through the gateway. Nothing in it is staged, and it produces
+the same numbers the report does.
+
+A hand-written animation of what the system supposedly does would be quicker and
+would prove nothing. This runs the actual gateway against actual recorded
+behaviour, and it is deterministic, so a recording of it is identical every take.
+
+### D-092 — A real recording ships with the package
+
+Found by testing from a bare clone: `runs/` is generated output and is correctly
+gitignored, so a cloner had no recorded episode and the demo failed with
+"run pariksha bench first". The README claim that it needs no API key was true
+and useless -- it needed something the clone did not have.
+
+One genuine episode from the `gpt-oss-20b` run, 5 KB, now ships inside the
+package. A local run is preferred when present so the demo reflects whatever was
+measured most recently, and the shipped recording is the fallback. A test asserts
+the demo works against a directory that does not exist.

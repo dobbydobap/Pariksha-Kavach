@@ -222,6 +222,11 @@ writing it from memory on the last night produces a generic answer.
 
 ## Phase 6 — Submission
 
+- [x] **T59** `pariksha demo` and the README diagram: a paced walkthrough of one
+  attack landing then being blocked, driven from a real recording that ships
+  with the package so it works from a bare clone with no key (D-091, D-092).
+
+
 - [x] **T54** Video script drafted in `docs/VIDEO.md`; numbers filled and
   rehearsed once the final run lands.  Original brief: Structure: 0:00 the seam ·
   0:30 the attack landing live · 1:30 the same attack bouncing off Kavach ·

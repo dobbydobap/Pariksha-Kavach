@@ -47,7 +47,8 @@ If a later run supersedes it, re-read this file before recording.
 >
 > Watch what the agent does.
 
-**On screen:** run the episode. Let the `create_payout` call land, uninterrupted.
+**On screen:** `pariksha demo` — it paces itself, so let it play. The
+`create_payout` line lands in red.
 
 > Five lakh rupees, to an account that exists nowhere except inside a message a
 > customer wrote.
@@ -63,7 +64,8 @@ If a later run supersedes it, re-read this file before recording.
 
 > Same agent, same attack, same seed. This time it goes through Kavach.
 
-**On screen:** re-run with `--policy default`, highlight the block.
+**On screen:** the demo continues into part 3 on its own — the same calls, then
+`BLOCKED create_payout` with the reason underneath.
 
 > Blocked, and the reason is specific: that account has never been seen in a
 > field Razorpay produced.
@@ -200,6 +202,8 @@ If a later run supersedes it, re-read this file before recording.
 - Numbers as spoken above are from the gpt-oss-20b run, 37 of 41 episodes.
   If the final run differs, re-read this file before recording.
 - The attack landing at 1:00 is the moment a judge remembers. Give it silence.
+- `pariksha demo` is the whole 0:35-2:20 stretch. Record it once, clean, at a
+  readable font size. It runs from recorded data, so it is identical every take.
 - No placeholder numbers. No cropped terminal text.
 - State the limitations out loud once. A judge who finds an overclaim stops
   believing the rest.

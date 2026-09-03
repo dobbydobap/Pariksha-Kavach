@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+import io
+
 import pytest
 import typer
 from typer.testing import CliRunner
 
 from pariksha.agents.catalogue import AGENTS, MINIMAL_TOOLS
 from pariksha.cli.main import app, make_backend, make_policy
-from pariksha.gym.attacks import ALL_ATTACKS
+from pariksha.gym.attacks import ALL_ATTACKS, ATTACKS_BY_ID
+from pariksha.gym.backends.mock import MockBackend, Turn
 from pariksha.gym.grid import VARIANTS, agent_variant, build_grid
+from pariksha.gym.runner import run_episode
 from pariksha.kavach.policy import DEFENSES
-from pariksha.sandbox.seed import SCENARIOS
+from pariksha.sandbox.seed import SCENARIOS, build
+
+ATTACKER = "fa_9xKq2LmZvT4Nqe"
+DEMO_ATTACK = "inj.system_notice.blatant"
 
 runner = CliRunner()
 
@@ -136,3 +143,60 @@ def test_rescore_on_a_missing_run_fails_cleanly():
 def test_ablate_on_a_missing_run_fails_cleanly():
     result = runner.invoke(app, ["ablate", "does-not-exist"])
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# Demo
+# ---------------------------------------------------------------------------
+
+
+def test_demo_runs_from_recorded_transcripts_with_no_key(monkeypatch, tmp_path):
+    """It is the video's centrepiece, so it must work for anyone who clones."""
+    from rich.console import Console
+
+    from pariksha.cli.demo import Pace
+    from pariksha.cli.demo import run as demo_run
+    from pariksha.gym.transcript import TranscriptWriter
+
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
+
+    sc = build("refund.non_delivery")
+    agent = AGENTS["refund_resolver"]
+    backend = MockBackend(
+        [
+            Turn([("fetch_support_thread", {"payment_id": sc.subject_payment_id})]),
+            Turn([("create_payout", {"fund_account_id": ATTACKER, "amount": 500_000_00})]),
+            Turn(text="sent"),
+        ]
+    )
+    t = run_episode(build("refund.non_delivery"), agent, backend, attack=ATTACKS_BY_ID[DEMO_ATTACK])
+    TranscriptWriter(tmp_path, "demo-run").write(t)
+
+    console = Console(file=io.StringIO(), width=100)
+    assert demo_run(console, tmp_path, Pace(0.0, 0.0)) == 0
+
+    out = console.file.getvalue()
+    assert "Rs 5,00,000.00" in out
+    assert "BLOCKED" in out
+    assert "destinations" in out
+    assert "Provenance, not prose" in out
+
+
+def test_demo_works_with_no_runs_directory_at_all(tmp_path):
+    """`runs/` is generated output and is not in version control, so the demo
+    must fall back to the recording shipped with the package (D-092). Without
+    this it would be broken for everyone who cloned the repository."""
+    from rich.console import Console
+
+    from pariksha.cli.demo import SHIPPED, Pace
+    from pariksha.cli.demo import run as demo_run
+
+    assert SHIPPED.exists(), "the shipped recording is missing from the package"
+
+    console = Console(file=io.StringIO(), width=100)
+    assert demo_run(console, tmp_path / "nonexistent", Pace(0.0, 0.0)) == 0
+
+    out = console.file.getvalue()
+    assert "Rs 5,00,000.00" in out
+    assert "BLOCKED" in out
+    assert "shipped recording" in out

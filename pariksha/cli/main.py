@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import typer
@@ -23,6 +24,11 @@ from pariksha.sandbox.seed import build
 
 # Keys live in .env; backends read them from the environment.
 load_dotenv()
+
+# Windows consoles default to a legacy code page, which mangles the corpus
+# payloads on screen. The demo is meant to be recorded, so force UTF-8.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 app = typer.Typer(add_completion=False, help="An exam for money-moving AI agents.")
 console = Console()
@@ -128,6 +134,21 @@ def bench(
 
     tokens = sum(t.usage.input_tokens + t.usage.output_tokens for t in transcripts)
     console.print(f"\n{tokens:,} tokens across {len(transcripts)} episodes")
+
+
+@app.command()
+def demo(
+    fast: bool = typer.Option(False, "--fast", help="No pacing. For CI."),
+) -> None:
+    """Show one attack landing, then the same attack blocked by Kavach.
+
+    Reads a recorded transcript and replays it through the gateway, so it needs
+    no API key and shows the same numbers the report does.
+    """
+    from pariksha.cli.demo import Pace, run
+
+    pace = Pace(beat=0.0, line=0.0) if fast else Pace()
+    raise typer.Exit(run(console, RUNS, pace))
 
 
 @app.command()
